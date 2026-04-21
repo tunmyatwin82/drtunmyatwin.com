@@ -429,7 +429,7 @@ function LandingPage() {
                                         <span className="channel-name">WhatsApp</span>
                                     </button>
                                     <button
-                                        onClick={() => window.open('#', '_blank')}
+                                        onClick={() => window.open('https://zoom.us/j/8731320275', '_blank')}
                                         className="channel-option"
                                         style={{ cursor: 'pointer' }}
                                     >
@@ -437,7 +437,7 @@ function LandingPage() {
                                         <span className="channel-name">Zoom</span>
                                     </button>
                                     <button
-                                        onClick={() => window.open('#', '_blank')}
+                                        onClick={() => window.open('https://meet.google.com/wgd-bubr-tgo', '_blank')}
                                         className="channel-option"
                                         style={{ cursor: 'pointer' }}
                                     >
