@@ -413,7 +413,7 @@ function LandingPage() {
                                         <span className="channel-name">Telegram</span>
                                     </button>
                                     <button
-                                        onClick={() => window.open('viber://chat?number=959987654321', '_blank')}
+                                        onClick={() => window.open('viber://chat?number=959421068582', '_blank')}
                                         className="channel-option"
                                         style={{ cursor: 'pointer' }}
                                     >
@@ -421,7 +421,7 @@ function LandingPage() {
                                         <span className="channel-name">Viber</span>
                                     </button>
                                     <button
-                                        onClick={() => window.open('https://wa.me/959987654321', '_blank')}
+                                        onClick={() => window.open('https://wa.me/959421068582', '_blank')}
                                         className="channel-option"
                                         style={{ cursor: 'pointer' }}
                                     >
