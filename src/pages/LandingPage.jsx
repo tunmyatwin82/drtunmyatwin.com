@@ -399,6 +399,53 @@ function LandingPage() {
                             <p style={{ marginTop: '1.5rem', fontSize: '0.875rem', opacity: '0.6', textAlign: 'center' }}>
                                 💡 အချိန်စာရင်း သတ်မှတ်ပြီးသည်နှင့် email မှတစ်ဆင့် ချိန်းဆိုမှု အတည်ပြုချက်ကို ချက်ချင်း ရရှိမည်ဖြစ်ပါသည်။
                             </p>
+
+                            <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                                <h4 style={{ marginBottom: '1rem', textAlign: 'center' }}>သို့မဟုတ် နှစ်သက်ရာ လမ်းကြောင်းဖြင့် တိုက်ရိုက် ဆက်သွယ်ပါ</h4>
+
+                                <div className="channel-options">
+                                    <button
+                                        onClick={() => window.open('https://t.me/drtunhealthconsultant', '_blank')}
+                                        className="channel-option"
+                                        style={{ cursor: 'pointer' }}
+                                    >
+                                        <span className="channel-icon">✈️</span>
+                                        <span className="channel-name">Telegram</span>
+                                    </button>
+                                    <button
+                                        onClick={() => window.open('viber://chat?number=959987654321', '_blank')}
+                                        className="channel-option"
+                                        style={{ cursor: 'pointer' }}
+                                    >
+                                        <span className="channel-icon">💜</span>
+                                        <span className="channel-name">Viber</span>
+                                    </button>
+                                    <button
+                                        onClick={() => window.open('https://wa.me/959987654321', '_blank')}
+                                        className="channel-option"
+                                        style={{ cursor: 'pointer' }}
+                                    >
+                                        <span className="channel-icon">💚</span>
+                                        <span className="channel-name">WhatsApp</span>
+                                    </button>
+                                    <button
+                                        onClick={() => window.open('#', '_blank')}
+                                        className="channel-option"
+                                        style={{ cursor: 'pointer' }}
+                                    >
+                                        <span className="channel-icon">📹</span>
+                                        <span className="channel-name">Zoom</span>
+                                    </button>
+                                    <button
+                                        onClick={() => window.open('#', '_blank')}
+                                        className="channel-option"
+                                        style={{ cursor: 'pointer' }}
+                                    >
+                                        <span className="channel-icon">📹</span>
+                                        <span className="channel-name">Google Meet</span>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -68,7 +68,8 @@ function LeadForm() {
                     body: JSON.stringify({
                         Name: formData.name,
                         Email: formData.email,
-                        Phone: formData.phone
+                        Phone: formData.phone,
+                        PreferredChannel: formData.preferred_channel
                     }),
                 }
             )
@@ -87,7 +88,12 @@ function LeadForm() {
 
             // Navigate to thank you page
             navigate('/thank-you', {
-                state: { name: formData.name, email: formData.email },
+                state: {
+                    name: formData.name,
+                    email: formData.email,
+                    phone: formData.phone,
+                    preferred_channel: formData.preferred_channel
+                },
             })
         } catch (err) {
             console.error('❌ Submission error:', err)

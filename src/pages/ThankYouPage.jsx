@@ -5,7 +5,20 @@ import './ThankYouPage.css'
 
 function ThankYouPage() {
     const location = useLocation()
-    const { name, email } = location.state || {}
+    const { name, email, phone, preferred_channel } = location.state || {}
+
+    const getChannelInfo = (channel) => {
+        const channels = {
+            telegram: { icon: '✈️', name: 'Telegram', url: 'https://t.me/drtunhealthconsultant', text: 'Telegram မှတဆင့် ဆက်သွယ်ပါမည်' },
+            viber: { icon: '💜', name: 'Viber', url: 'viber://chat?number=959987654321', text: 'Viber မှတဆင့် ဆက်သွယ်ပါမည်' },
+            whatsapp: { icon: '💚', name: 'WhatsApp', url: 'https://wa.me/959987654321', text: 'WhatsApp မှတဆင့် ဆက်သွယ်ပါမည်' },
+            zoom: { icon: '📹', name: 'Zoom', url: '#', text: 'Zoom Meeting ချိန်းဆက်ပေးပါမည်' },
+            google_meet: { icon: '📹', name: 'Google Meet', url: '#', text: 'Google Meet ချိန်းဆက်ပေးပါမည်' }
+        }
+        return channels[channel] || channels.telegram
+    }
+
+    const selectedChannel = getChannelInfo(preferred_channel)
 
     useEffect(() => {
         window.scrollTo(0, 0)
@@ -70,7 +83,7 @@ function ThankYouPage() {
                                 <div className="thankyou-step">
                                     <div className="thankyou-step__number">✓</div>
                                     <div className="thankyou-step__text">
-                                        နောက်ထပ် အသုံးဝင်သော အချက်အလက်များကို စောင့်ဆိုင်းပါ
+                                        {selectedChannel.name} မှတဆင့် ဆရာဝန်က 24 နာရီအတွင်း ဆက်သွယ်ပေးမည်
                                     </div>
                                 </div>
                             </div>
@@ -140,44 +153,76 @@ function ThankYouPage() {
                                 ကျန်းမာရေးပြဿနာ ရှိပါသလား?
                             </h2>
                             <p style={{ marginBottom: '1.5rem', opacity: '0.8' }}>
-                                အထွေထွေရောဂါကု ဆရာဝန်နဲ့ တိုက်ရိုက် တိုင်ပင်ဆွေးနွေးနိုင်ပါပြီ။ သင့်ရဲ့ ကျန်းမာရေးပြဿနာကို အသေးစိတ် မေးမြန်းပြီး လမ်းညွှန်ပေးမှာ ဖြစ်ပါတယ်။
+                                သင့်စိတ်ကြိုက် ဆက်သွယ်ရေးလမ်းကြောင်းကို ရွေးပြီး ဆရာဝန်နဲ့ တိုက်ရိုက် တိုင်ပင်ဆွေးနွေးနိုင်ပါပြီ။
                             </p>
 
-                            <form style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                <div>
-                                    <input
-                                        type="text"
-                                        placeholder="သင့်အမည်"
-                                        style={{ width: '100%', padding: '0.875rem 1rem', borderRadius: '0.75rem', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.2)', color: 'white', fontSize: '1rem' }}
-                                    />
-                                </div>
-                                <div>
-                                    <input
-                                        type="tel"
-                                        placeholder="ဖုန်းနံပါတ်"
-                                        style={{ width: '100%', padding: '0.875rem 1rem', borderRadius: '0.75rem', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.2)', color: 'white', fontSize: '1rem' }}
-                                    />
-                                </div>
-                                <div>
-                                    <textarea
-                                        placeholder="သင့်ကျန်းမာရေး ပြဿနာ အသေးစိတ် ရေးပေးပါ"
-                                        rows="4"
-                                        style={{ width: '100%', padding: '0.875rem 1rem', borderRadius: '0.75rem', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.2)', color: 'white', fontSize: '1rem', resize: 'vertical' }}
-                                    ></textarea>
-                                </div>
-                                <a
-                                    href="https://t.me/drtunhealthconsultant"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="btn btn-primary btn-lg"
-                                    style={{ width: '100%', textAlign: 'center', textDecoration: 'none' }}
+                            <div className="channel-options" style={{ marginBottom: '1.5rem' }}>
+                                <button
+                                    onClick={() => window.open('https://t.me/drtunhealthconsultant', '_blank')}
+                                    className="channel-option"
+                                    style={{ cursor: 'pointer' }}
                                 >
-                                    📅 Telegram မှာ တိုက်ရိုက်တိုင်ပင်မည်
-                                </a>
-                            </form>
+                                    <span className="channel-icon">✈️</span>
+                                    <span className="channel-name">Telegram</span>
+                                </button>
+                                <button
+                                    onClick={() => window.open('viber://chat?number=959987654321', '_blank')}
+                                    className="channel-option"
+                                    style={{ cursor: 'pointer' }}
+                                >
+                                    <span className="channel-icon">💜</span>
+                                    <span className="channel-name">Viber</span>
+                                </button>
+                                <button
+                                    onClick={() => window.open('https://wa.me/959987654321', '_blank')}
+                                    className="channel-option"
+                                    style={{ cursor: 'pointer' }}
+                                >
+                                    <span className="channel-icon">💚</span>
+                                    <span className="channel-name">WhatsApp</span>
+                                </button>
+                                <button
+                                    onClick={() => window.open('#', '_blank')}
+                                    className="channel-option"
+                                    style={{ cursor: 'pointer' }}
+                                >
+                                    <span className="channel-icon">📹</span>
+                                    <span className="channel-name">Zoom</span>
+                                </button>
+                                <button
+                                    onClick={() => window.open('#', '_blank')}
+                                    className="channel-option"
+                                    style={{ cursor: 'pointer' }}
+                                >
+                                    <span className="channel-icon">📹</span>
+                                    <span className="channel-name">Google Meet</span>
+                                </button>
+                            </div>
+
+                            <div style={{ marginBottom: '1rem' }}>
+                                <input
+                                    type="text"
+                                    placeholder="သင့်အမည်"
+                                    style={{ width: '100%', padding: '0.875rem 1rem', borderRadius: '0.75rem', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.2)', color: 'white', fontSize: '1rem' }}
+                                />
+                            </div>
+                            <div style={{ marginBottom: '1rem' }}>
+                                <input
+                                    type="tel"
+                                    placeholder="ဖုန်းနံပါတ်"
+                                    style={{ width: '100%', padding: '0.875rem 1rem', borderRadius: '0.75rem', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.2)', color: 'white', fontSize: '1rem' }}
+                                />
+                            </div>
+                            <div style={{ marginBottom: '1rem' }}>
+                                <textarea
+                                    placeholder="သင့်ကျန်းမာရေး ပြဿနာ အသေးစိတ် ရေးပေးပါ"
+                                    rows="4"
+                                    style={{ width: '100%', padding: '0.875rem 1rem', borderRadius: '0.75rem', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.2)', color: 'white', fontSize: '1rem', resize: 'vertical' }}
+                                ></textarea>
+                            </div>
 
                             <p style={{ marginTop: '1rem', fontSize: '0.875rem', opacity: '0.6' }}>
-                                ✅ ချိန်းယူပြီးသည်နှင့် ၂၄ နာရီအတွင်း ဆရာဝန်က တိုက်ရိုက် ဆက်သွယ်ပေးမှာ ဖြစ်ပါတယ်။
+                                ✅ မိမိ စိတ်ကြိုက် channel ကို နှိပ်ပြီး တိုက်ရိုက် တိုင်ပင်နိုင်ပါတယ်။ ချိန်းယူပြီးသည်နှင့် ၂၄ နာရီအတွင်း ဆရာဝန်က တိုက်ရိုက် ဆက်သွယ်ပေးမှာ ဖြစ်ပါတယ်။
                             </p>
                         </div>
                     </section>
