@@ -6,10 +6,9 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      '/api/nocodb': {
-        target: 'https://db.drtunmyatwin.com',
+      '/api': {
+        target: 'http://localhost:8787',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/nocodb/, ''),
         secure: false
       }
     }

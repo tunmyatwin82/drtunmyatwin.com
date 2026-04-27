@@ -1,0 +1,62 @@
+.admin-card {
+    padding: 2rem;
+}
+
+.admin-subtitle {
+    opacity: 0.8;
+    margin-top: 0.5rem;
+}
+
+.admin-auth,
+.admin-toolbar {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+.admin-toolbar {
+    grid-template-columns: 2fr 1fr 1fr auto auto;
+    align-items: center;
+}
+
+.admin-table-wrap {
+    margin-top: 1rem;
+    overflow-x: auto;
+}
+
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.admin-table th,
+.admin-table td {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    padding: 0.75rem;
+    text-align: left;
+}
+
+.actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.admin-pagination {
+    margin-top: 1rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.admin-error {
+    margin-top: 1rem;
+    color: #fca5a5;
+}
+
+@media (max-width: 900px) {
+    .admin-toolbar {
+        grid-template-columns: 1fr;
+    }
+}

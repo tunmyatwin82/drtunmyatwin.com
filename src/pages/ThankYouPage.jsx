@@ -5,7 +5,7 @@ import './ThankYouPage.css'
 
 function ThankYouPage() {
     const location = useLocation()
-    const { name, email, phone, preferred_channel } = location.state || {}
+    const { name, _email, _phone, preferred_channel } = location.state || {}
 
     const getChannelInfo = (channel) => {
         const channels = {

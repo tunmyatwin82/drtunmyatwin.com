@@ -1,0 +1,274 @@
+/* ===== MEDICAL RECORDS UPLOAD PAGE ===== */
+.medical-records-page {
+    min-height: 100vh;
+}
+
+.medical-records-hero {
+    min-height: 60vh;
+    padding: 6rem 0 4rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.medical-records-hero__bg-orbs {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+.medical-records-hero__orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.3;
+}
+
+.medical-records-hero__orb--1 {
+    width: 400px;
+    height: 400px;
+    background: rgba(34, 197, 94, 0.15);
+    top: -10%;
+    right: -5%;
+}
+
+.medical-records-hero__orb--2 {
+    width: 300px;
+    height: 300px;
+    background: rgba(59, 130, 246, 0.1);
+    bottom: 0;
+    left: 10%;
+}
+
+.medical-records-content {
+    max-width: 800px;
+    margin: 0 auto;
+    text-align: center;
+    opacity: 0;
+}
+
+.medical-records-checkmark {
+    font-size: 4rem;
+    margin-bottom: 1.5rem;
+    animation: scaleIn 0.5s ease-out forwards;
+}
+
+.medical-records-title {
+    font-size: var(--font-size-4xl);
+    font-weight: 800;
+    margin-bottom: 1rem;
+    background: linear-gradient(135deg, var(--success-400), var(--primary-400));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.medical-records-subtitle {
+    font-size: var(--font-size-lg);
+    color: var(--text-secondary);
+    line-height: 1.8;
+    margin-bottom: 2.5rem;
+}
+
+.medical-records-card {
+    text-align: left;
+    padding: 2.5rem;
+    margin-top: 2rem;
+}
+
+.medical-records-card__header h2 {
+    font-size: var(--font-size-2xl);
+    font-weight: 700;
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+/* Upload Area */
+.upload-area {
+    margin-bottom: 2rem;
+    padding: 3rem 2rem;
+    border: 2px dashed rgba(255, 255, 255, 0.15);
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+    transition: var(--transition-fast);
+    text-align: center;
+}
+
+.upload-area:hover {
+    border-color: var(--success-400);
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.file-input {
+    display: none;
+}
+
+.upload-label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    cursor: pointer;
+}
+
+.upload-icon {
+    font-size: 3rem;
+}
+
+.upload-text {
+    font-size: var(--font-size-lg);
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.upload-hint {
+    font-size: var(--font-size-sm);
+    color: var(--text-muted);
+}
+
+/* Selected Files */
+.selected-files {
+    margin-bottom: 2rem;
+}
+
+.selected-files h3 {
+    font-size: var(--font-size-lg);
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+
+.files-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.file-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: var(--radius-lg);
+}
+
+.file-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex: 1;
+}
+
+.file-preview {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    border-radius: var(--radius-sm);
+}
+
+.file-icon {
+    font-size: 2rem;
+}
+
+.file-name {
+    font-size: var(--font-size-sm);
+    color: var(--text-primary);
+    word-break: break-all;
+}
+
+.remove-file-btn {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: var(--transition-fast);
+}
+
+.remove-file-btn:hover {
+    background: rgba(239, 68, 68, 0.2);
+}
+
+/* Upload Notice */
+.upload-notice {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background: rgba(251, 191, 36, 0.05);
+    border: 1px solid rgba(251, 191, 36, 0.1);
+    border-radius: var(--radius-lg);
+}
+
+.upload-notice p {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+/* Upload Success */
+.upload-success {
+    text-align: center;
+    padding: 3rem 2rem;
+    margin-top: 2rem;
+}
+
+.success-icon {
+    font-size: 4rem;
+    margin-bottom: 1.5rem;
+}
+
+.upload-success h2 {
+    font-size: var(--font-size-2xl);
+    font-weight: 800;
+    margin-bottom: 1rem;
+    background: linear-gradient(135deg, var(--success-400), var(--primary-400));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.upload-success p {
+    font-size: var(--font-size-lg);
+    color: var(--text-secondary);
+    line-height: 1.8;
+    margin-bottom: 2rem;
+}
+
+.success-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .medical-records-content {
+        padding: 0 1rem;
+    }
+
+    .medical-records-card {
+        padding: 2rem 1.5rem;
+    }
+
+    .upload-area {
+        padding: 2rem 1rem;
+    }
+
+    .file-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+
+    .remove-file-btn {
+        align-self: flex-end;
+    }
+
+    .success-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+}

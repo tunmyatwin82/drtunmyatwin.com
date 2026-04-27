@@ -1,13 +1,58 @@
+import { useMemo, useState } from 'react'
 import Navbar from '../components/Navbar'
 import LeadForm from '../components/LeadForm'
 import Footer from '../components/Footer'
+import BookingForm from '../components/BookingForm'
 import './LandingPage.css'
 
 function LandingPage() {
+    const [calendarMonth, setCalendarMonth] = useState(() => {
+        const now = new Date()
+        return new Date(now.getFullYear(), now.getMonth(), 1)
+    })
+    const [selectedDate, setSelectedDate] = useState('')
+    const [selectedTime, setSelectedTime] = useState('')
+
     const scrollToForm = () => {
         const el = document.getElementById('lead-form')
         if (el) el.scrollIntoView({ behavior: 'smooth' })
     }
+
+    const monthLabel = calendarMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+    const todayStr = new Date().toISOString().split('T')[0]
+    const availableTimes = ['09:00', '10:00', '11:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00']
+
+    const calendarDays = useMemo(() => {
+        const year = calendarMonth.getFullYear()
+        const month = calendarMonth.getMonth()
+        const firstDay = new Date(year, month, 1)
+        const startWeekday = firstDay.getDay()
+        const daysInMonth = new Date(year, month + 1, 0).getDate()
+        const days = []
+
+        for (let i = 0; i < startWeekday; i += 1) {
+            days.push({ key: `empty-${i}`, dateStr: '', day: '', disabled: true, empty: true })
+        }
+
+        for (let day = 1; day <= daysInMonth; day += 1) {
+            const date = new Date(year, month, day)
+            const dateStr = date.toISOString().split('T')[0]
+            const disabled = dateStr < todayStr
+            days.push({
+                key: dateStr,
+                day,
+                dateStr,
+                disabled,
+                empty: false
+            })
+        }
+
+        return days
+    }, [calendarMonth, todayStr])
+
+    const selectedDateLabel = selectedDate
+        ? new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short' })
+        : 'နေ့ရက် မရွေးရသေးပါ'
 
     return (
         <div className="landing-page">
@@ -349,56 +394,84 @@ function LandingPage() {
                         တိုင်ပင်ဆွေးနွေးခြင်း
                     </h2>
                     <p className="section-subtitle">
-                        အထွေထွေရောဂါကု ဆရာဝန်နဲ့ တိုက်ရိုက် တိုင်ပင်ဆွေးနွေးနိုင်ပါပြီ။ Google Calendar ဖြင့် အချိန်စာရင်း သတ်မှတ်ပြီး အစီအစဉ်အတိုင်း တိုင်ပင်ဆွေးနွေးနိုင်ပါတယ်။
+                        အထွေထွေရောဂါကု ဆရာဝန်နဲ့ တိုက်ရိုက် တိုင်ပင်ဆွေးနွေးနိုင်ပါပြီ။ အောက်က calendar ထဲကနေ နေ့ရက်နဲ့ အချိန်ကို ရွေးပြီး booking တင်နိုင်ပါတယ်။
                     </p>
 
                     <div style={{ maxWidth: '600px', marginLeft: 'auto', marginRight: 'auto', marginTop: '2rem' }}>
                         <div className="glass-card" style={{ padding: '2rem' }}>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                                <div style={{ textAlign: 'center', padding: '1rem', background: 'rgba(59, 130, 246, 0.1)', borderRadius: '0.75rem', border: '1px solid rgba(59, 130, 246, 0.2)' }}>
-                                    <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>📅</div>
-                                    <h3 style={{ marginBottom: '0.5rem' }}>Google Calendar အကူအညီဖြင့် အချိန်စာရင်း သတ်မှတ်ပါ</h3>
-                                    <p style={{ opacity: '0.8', fontSize: '0.9rem' }}>
-                                        သင့်အဆင်ပြေသော နေ့ရက်နဲ့ အချိန်ကို ရွေးချယ်ပြီး အတည်ပြုလိုက်ပါ။ ချက်ချင်း အတည်ပြုမှတ်တမ်း ရရှိမည်ဖြစ်ပြီး တိုင်ပင်ချိန်မတိုင်မှတ်ယူပေးပါမည်။
-                                    </p>
+                            <div className="booking-calendar">
+                                <div className="booking-calendar__header">
+                                    <button
+                                        type="button"
+                                        className="booking-calendar__nav"
+                                        onClick={() =>
+                                            setCalendarMonth(
+                                                (prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1)
+                                            )
+                                        }
+                                    >
+                                        ◀
+                                    </button>
+                                    <h3 className="booking-calendar__month">{monthLabel}</h3>
+                                    <button
+                                        type="button"
+                                        className="booking-calendar__nav"
+                                        onClick={() =>
+                                            setCalendarMonth(
+                                                (prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1)
+                                            )
+                                        }
+                                    >
+                                        ▶
+                                    </button>
                                 </div>
 
-                                <a
-                                    href="https://calendar.app.google/EMSaPsZuvpzhVqcd7"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="btn btn-primary btn-lg"
-                                    style={{ width: '100%', textAlign: 'center', textDecoration: 'none' }}
-                                >
-                                    📅 အချိန်စာရင်း သတ်မှတ်မည်
-                                </a>
+                                <div className="booking-calendar__weekdays">
+                                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((label) => (
+                                        <span key={label}>{label}</span>
+                                    ))}
+                                </div>
+
+                                <div className="booking-calendar__grid">
+                                    {calendarDays.map((item) => (
+                                        <button
+                                            key={item.key}
+                                            type="button"
+                                            disabled={item.disabled}
+                                            className={`booking-calendar__day ${item.empty ? 'booking-calendar__day--empty' : ''
+                                                } ${selectedDate === item.dateStr ? 'booking-calendar__day--selected' : ''}`}
+                                            onClick={() => {
+                                                if (!item.empty && !item.disabled) setSelectedDate(item.dateStr)
+                                            }}
+                                        >
+                                            {item.day}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
 
-                            <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-                                <h4 style={{ marginBottom: '1rem' }}>✅ Google Calendar ရဲ့ အကျိုးကျေးဇူးများ</h4>
-                                <ul style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', opacity: '0.8' }}>
-                                    <li style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
-                                        <span>✅</span>
-                                        <span>သင့်ကိုယ်ပိုင် calendar ထဲမှာ အလိုအလျောက် ထည့်သွင်းမှတ်သားပေးမည်</span>
-                                    </li>
-                                    <li style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
-                                        <span>✅</span>
-                                        <span>တိုင်ပင်ချိန် မတိုင်မှတ် အကြိုသတိပေးပေးမည်</span>
-                                    </li>
-                                    <li style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
-                                        <span>✅</span>
-                                        <span>အချိန်ပြောင်းလဲလိုလျှင် အလွယ်တကူ ပြန်ပြင်နိုင်ပါတယ်</span>
-                                    </li>
-                                    <li style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
-                                        <span>✅</span>
-                                        <span>အပိုင်းအခြား မရှိဘဲ ကမ္ဘာ့နေရာတိုင်းမှ သုံးနိုင်ပါတယ်</span>
-                                    </li>
-                                </ul>
+                            <div className="booking-calendar__times">
+                                <h4>ရွေးထားသောနေ့: {selectedDateLabel}</h4>
+                                <div className="booking-calendar__time-grid">
+                                    {availableTimes.map((time) => (
+                                        <button
+                                            key={time}
+                                            type="button"
+                                            className={`booking-calendar__time ${selectedTime === time ? 'booking-calendar__time--selected' : ''}`}
+                                            onClick={() => setSelectedTime(time)}
+                                        >
+                                            {time}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
 
-                            <p style={{ marginTop: '1.5rem', fontSize: '0.875rem', opacity: '0.6', textAlign: 'center' }}>
-                                💡 အချိန်စာရင်း သတ်မှတ်ပြီးသည်နှင့် email မှတစ်ဆင့် ချိန်းဆိုမှု အတည်ပြုချက်ကို ချက်ချင်း ရရှိမည်ဖြစ်ပါသည်။
-                            </p>
+                            <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                                <h4 style={{ marginBottom: '1rem', textAlign: 'center' }}>
+                                    အချိန်ရွေးပြီးရင် booking form ဖြင့် တင်ပို့ပါ
+                                </h4>
+                                <BookingForm initialDate={selectedDate} initialTime={selectedTime} />
+                            </div>
 
                             <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
                                 <h4 style={{ marginBottom: '1rem', textAlign: 'center' }}>သို့မဟုတ် နှစ်သက်ရာ လမ်းကြောင်းဖြင့် တိုက်ရိုက် ဆက်သွယ်ပါ</h4>

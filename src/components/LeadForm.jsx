@@ -2,11 +2,6 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import './LeadForm.css'
 
-// NocoDB API configuration
-const NOCODB_API_URL = 'https://db.drtunmyatwin.com'
-const NOCODB_TABLE_ID = 'mz6cj5r8sxt9oif'
-const NOCODB_API_TOKEN = '0bXBuEIqxEBHjqRWceYkHw74c5FRe3AR7tCpAgy3'
-
 function LeadForm() {
     const navigate = useNavigate()
     const [formData, setFormData] = useState({
@@ -54,45 +49,29 @@ function LeadForm() {
         setIsSubmitting(true)
 
         try {
-            // Submit to NocoDB directly (works locally without proxy)
-            console.log('Submitting form data to NocoDB:', formData)
-
-            const response = await fetch(
-                `${NOCODB_API_URL}/api/v2/tables/${NOCODB_TABLE_ID}/records`,
-                {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'xc-token': NOCODB_API_TOKEN
-                    },
-                    body: JSON.stringify({
-                        Name: formData.name,
-                        Email: formData.email,
-                        Phone: formData.phone,
-                        PreferredChannel: formData.preferred_channel
-                    }),
-                }
-            )
-
-            console.log('NocoDB Response Status:', response.status)
-            console.log('NocoDB Response OK:', response.ok)
-
-            const responseData = await response.text()
-            console.log('NocoDB Response Body:', responseData)
+            const response = await fetch('/api/leads', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    name: formData.name,
+                    email: formData.email,
+                    phone: formData.phone
+                })
+            })
+            const responseData = await response.json()
 
             if (!response.ok) {
-                throw new Error(`NocoDB submission failed: ${response.status} - ${responseData}`)
+                throw new Error(responseData.error || `Submission failed: ${response.status}`)
             }
-
-            console.log('✅ Form successfully saved to NocoDB')
 
             // Navigate to thank you page
             navigate('/thank-you', {
                 state: {
                     name: formData.name,
                     email: formData.email,
-                    phone: formData.phone,
-                    preferred_channel: formData.preferred_channel
+                    phone: formData.phone
                 },
             })
         } catch (err) {

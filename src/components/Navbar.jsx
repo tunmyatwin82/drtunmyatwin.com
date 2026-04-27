@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import './Navbar.css'
 
 function Navbar() {
+    const navigate = useNavigate()
+    const location = useLocation()
     const [scrolled, setScrolled] = useState(false)
     const [mobileOpen, setMobileOpen] = useState(false)
 
@@ -16,8 +19,28 @@ function Navbar() {
     const scrollToForm = (e) => {
         e.preventDefault()
         setMobileOpen(false)
-        const el = document.getElementById('lead-form')
-        if (el) el.scrollIntoView({ behavior: 'smooth' })
+        if (location.pathname !== '/') {
+            navigate('/#consultation')
+            // Wait for navigation, then scroll
+            setTimeout(() => {
+                const el = document.getElementById('lead-form')
+                if (el) el.scrollIntoView({ behavior: 'smooth' })
+            }, 100)
+        } else {
+            const el = document.getElementById('lead-form')
+            if (el) el.scrollIntoView({ behavior: 'smooth' })
+        }
+    }
+
+    const navigateToSection = (sectionId, e) => {
+        e.preventDefault()
+        setMobileOpen(false)
+        if (location.pathname !== '/') {
+            navigate(`/#${sectionId}`)
+        } else {
+            const el = document.getElementById(sectionId)
+            if (el) el.scrollIntoView({ behavior: 'smooth' })
+        }
     }
 
     return (
@@ -29,11 +52,13 @@ function Navbar() {
                 </a>
 
                 <div className={`navbar__links ${mobileOpen ? 'navbar__links--open' : ''}`}>
-                    <a href="#benefits" onClick={() => setMobileOpen(false)}>အကျိုးကျေးဇူးများ</a>
-                    <a href="#about" onClick={() => setMobileOpen(false)}>ကျွန်တော့်အကြောင်း</a>
-                    <a href="#testimonials" onClick={() => setMobileOpen(false)}>သုံးသပ်ချက်များ</a>
-                    <a href="#faq" onClick={() => setMobileOpen(false)}>မေးလေ့ရှိသောမေးခွန်းများ</a>
-                    <a href="#consultation" onClick={() => setMobileOpen(false)}>တိုင်ပင်ဆွေးနွေးခြင်း</a>
+                    <a href="#benefits" onClick={(e) => navigateToSection('benefits', e)}>အကျိုးကျေးဇူးများ</a>
+                    <a href="#about" onClick={(e) => navigateToSection('about', e)}>ကျွန်တော့်အကြောင်း</a>
+                    <a href="#testimonials" onClick={(e) => navigateToSection('testimonials', e)}>သုံးသပ်ချက်များ</a>
+                    <a href="#faq" onClick={(e) => navigateToSection('faq', e)}>မေးလေ့ရှိသောမေးခွန်းများ</a>
+                    <a href="#consultation" onClick={(e) => navigateToSection('consultation', e)}>တိုင်ပင်ဆွေးနွေးခြင်း</a>
+                    <a href="/my-appointments" onClick={() => setMobileOpen(false)}>ချိန်းဆိုမှုများ</a>
+                    <a href="/admin/bookings" onClick={() => setMobileOpen(false)}>Admin Dashboard</a>
                 </div>
 
                 <button className="btn btn-primary navbar__cta" onClick={scrollToForm}>
