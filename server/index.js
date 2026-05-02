@@ -273,7 +273,7 @@ app.get('/api/admin/bookings', requireAdmin, async (req, res) => {
 app.patch('/api/admin/bookings/:id/status', requireAdmin, async (req, res) => {
     try {
         const { status } = req.body
-        const allowed = ['pending_payment', 'payment_submitted', 'confirmed', 'rejected', 'completed']
+        const allowed = ['pending_payment', 'payment_submitted', 'confirmed', 'rejected', 'completed', 'records_reviewed']
         if (!allowed.includes(status)) {
             return res.status(400).json({ error: 'Invalid status value' })
         }
@@ -285,6 +285,21 @@ app.patch('/api/admin/bookings/:id/status', requireAdmin, async (req, res) => {
             body: JSON.stringify({
                 Id: Number(req.params.id),
                 ConsultationType: `status:${status}`
+            })
+        })
+        res.json(updated)
+    } catch (error) {
+        res.status(500).json({ error: error.message })
+    }
+})
+
+app.patch('/api/admin/bookings/:id/records-reviewed', requireAdmin, async (req, res) => {
+    try {
+        const updated = await nocodbRequest(`/api/v2/tables/${NOCODB_BOOKING_TABLE_ID}/records`, {
+            method: 'PATCH',
+            body: JSON.stringify({
+                Id: Number(req.params.id),
+                ConsultationType: 'status:records_reviewed'
             })
         })
         res.json(updated)

@@ -166,6 +166,7 @@ function AdminBookings() {
                                         <option value="pending_payment">pending_payment</option>
                                         <option value="payment_submitted">payment_submitted</option>
                                         <option value="confirmed">confirmed</option>
+                                        <option value="records_reviewed">records_reviewed</option>
                                         <option value="rejected">rejected</option>
                                         <option value="completed">completed</option>
                                     </select>
@@ -200,6 +201,7 @@ function AdminBookings() {
                                                         <td>{resolveStatus(row)}</td>
                                                         <td className="actions">
                                                             <button className="btn btn-primary btn-sm" onClick={() => updateStatus(row.Id || row.id, 'confirmed')}>Confirm</button>
+                                                            <button className="btn btn-secondary btn-sm" onClick={() => updateStatus(row.Id || row.id, 'records_reviewed')}>Records Reviewed</button>
                                                             <button className="btn btn-secondary btn-sm" onClick={() => updateStatus(row.Id || row.id, 'rejected')}>Reject</button>
                                                             <button className="btn btn-secondary btn-sm" onClick={() => updateStatus(row.Id || row.id, 'completed')}>Complete</button>
                                                         </td>
