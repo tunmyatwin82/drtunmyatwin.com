@@ -122,17 +122,25 @@
     transition: var(--transition-fast);
 }
 
-.search-input::placeholder { color: var(--text-muted); }
+.search-input::placeholder {
+    color: var(--text-muted);
+}
+
 .search-input:focus {
     border-color: var(--accent-400);
     background: rgba(255, 255, 255, 0.08);
     box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.1);
 }
 
-.search-btn { padding: 0.875rem 1.5rem; white-space: nowrap; }
+.search-btn {
+    padding: 0.875rem 1.5rem;
+    white-space: nowrap;
+}
 
 /* ── Results ── */
-.appointments-results { text-align: left; }
+.appointments-results {
+    text-align: left;
+}
 
 .results-title {
     font-size: var(--font-size-2xl);
@@ -253,12 +261,47 @@
     letter-spacing: 0.04em;
 }
 
-.status-pending   { background: rgba(251,191,36,0.15);  color: #f59e0b; border: 1px solid rgba(251,191,36,0.3); }
-.status-submitted { background: rgba(59,130,246,0.15);  color: #3b82f6; border: 1px solid rgba(59,130,246,0.3); }
-.status-confirmed { background: rgba(34,197,94,0.15);   color: #22c55e; border: 1px solid rgba(34,197,94,0.3); }
-.status-rejected  { background: rgba(239,68,68,0.15);   color: #ef4444; border: 1px solid rgba(239,68,68,0.3); }
-.status-completed { background: rgba(139,92,246,0.15);  color: #8b5cf6; border: 1px solid rgba(139,92,246,0.3); }
-.status-unknown   { background: rgba(255,255,255,0.05); color: var(--text-muted); border: 1px solid rgba(255,255,255,0.1); }
+.status-pending {
+    background: rgba(251, 191, 36, 0.15);
+    color: #f59e0b;
+    border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+.status-submitted {
+    background: rgba(59, 130, 246, 0.15);
+    color: #3b82f6;
+    border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.status-confirmed {
+    background: rgba(34, 197, 94, 0.15);
+    color: #22c55e;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.status-reviewed {
+    background: rgba(168, 85, 247, 0.15);
+    color: #a855f7;
+    border: 1px solid rgba(168, 85, 247, 0.3);
+}
+
+.status-rejected {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.status-completed {
+    background: rgba(139, 92, 246, 0.15);
+    color: #8b5cf6;
+    border: 1px solid rgba(139, 92, 246, 0.3);
+}
+
+.status-unknown {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-muted);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
 
 /* ── Progress Bar ── */
 .progress-bar-wrapper {
@@ -329,14 +372,24 @@
     max-width: 64px;
 }
 
-.progress-step.done    .progress-step__label { color: #4ade80; }
-.progress-step.current .progress-step__label { color: var(--primary-300); }
-.progress-step.pending .progress-step__label { color: var(--text-muted); opacity: 0.6; }
+.progress-step.done .progress-step__label {
+    color: #4ade80;
+}
+
+.progress-step.current .progress-step__label {
+    color: var(--primary-300);
+}
+
+.progress-step.pending .progress-step__label {
+    color: var(--text-muted);
+    opacity: 0.6;
+}
 
 /* pulsing ring on current step */
 .progress-step__pulse {
     position: absolute;
-    top: 0; left: 50%;
+    top: 0;
+    left: 50%;
     transform: translateX(-50%);
     width: 40px;
     height: 40px;
@@ -347,8 +400,15 @@
 }
 
 @keyframes stepPulse {
-    0%   { transform: translateX(-50%) scale(1);   opacity: 0.7; }
-    100% { transform: translateX(-50%) scale(1.9); opacity: 0; }
+    0% {
+        transform: translateX(-50%) scale(1);
+        opacity: 0.7;
+    }
+
+    100% {
+        transform: translateX(-50%) scale(1.9);
+        opacity: 0;
+    }
 }
 
 /* connector line */
@@ -381,7 +441,7 @@
     padding: 0.7rem 1rem;
     background: rgba(255, 255, 255, 0.02);
     border-radius: var(--radius-md);
-    border: 1px solid rgba(255,255,255,0.04);
+    border: 1px solid rgba(255, 255, 255, 0.04);
 }
 
 .detail-item--full {
@@ -539,8 +599,8 @@
     border-radius: 999px;
     font-size: 0.7rem;
     font-weight: 700;
-    background: rgba(255,255,255,0.06);
-    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     color: var(--text-secondary);
     white-space: nowrap;
 }
@@ -551,29 +611,91 @@
     padding: 3rem 2rem;
 }
 
-.no-appointments-icon { font-size: 4rem; margin-bottom: 1.5rem; }
-.no-appointments h3   { font-size: var(--font-size-xl); font-weight: 700; margin-bottom: 1rem; }
-.no-appointments p    { font-size: var(--font-size-base); color: var(--text-secondary); margin-bottom: 2rem; }
+.no-appointments-icon {
+    font-size: 4rem;
+    margin-bottom: 1.5rem;
+}
+
+.no-appointments h3 {
+    font-size: var(--font-size-xl);
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+
+.no-appointments p {
+    font-size: var(--font-size-base);
+    color: var(--text-secondary);
+    margin-bottom: 2rem;
+}
 
 /* ── Responsive ── */
 @media (max-width: 768px) {
-    .appointments-content { padding: 0 1rem; }
-    .search-card { padding: 1.5rem; }
-    .search-input-group { flex-direction: column; }
+    .appointments-content {
+        padding: 0 1rem;
+    }
 
-    .confirmed-banner { padding: 1.25rem 1.25rem 1rem; }
-    .confirmed-banner__title { font-size: var(--font-size-lg); }
-    .confirmed-badge-pill { font-size: 0.7rem; padding: 0.35rem 0.75rem; }
+    .search-card {
+        padding: 1.5rem;
+    }
 
-    .progress-bar-wrapper { padding: 1.25rem 0.75rem 0.75rem; }
-    .progress-step__label { font-size: 0.62rem; max-width: 52px; }
-    .progress-step__circle { width: 34px; height: 34px; font-size: 0.95rem; }
+    .search-input-group {
+        flex-direction: column;
+    }
 
-    .appointment-details { padding: 0 1.25rem 1rem; }
-    .next-step-block { margin: 0 1.25rem 1.25rem; }
+    .confirmed-banner {
+        padding: 1.25rem 1.25rem 1rem;
+    }
 
-    .appointment-header { padding: 1rem 1.25rem; flex-direction: column; align-items: flex-start; gap: 0.5rem; }
-    .appointment-actions { padding: 0 1.25rem 1.25rem; flex-direction: column; }
-    .appointment-actions .btn-sm { width: 100%; text-align: center; }
-    .waiting-note { margin-right: 0; }
+    .confirmed-banner__title {
+        font-size: var(--font-size-lg);
+    }
+
+    .confirmed-badge-pill {
+        font-size: 0.7rem;
+        padding: 0.35rem 0.75rem;
+    }
+
+    .progress-bar-wrapper {
+        padding: 1.25rem 0.75rem 0.75rem;
+    }
+
+    .progress-step__label {
+        font-size: 0.62rem;
+        max-width: 52px;
+    }
+
+    .progress-step__circle {
+        width: 34px;
+        height: 34px;
+        font-size: 0.95rem;
+    }
+
+    .appointment-details {
+        padding: 0 1.25rem 1rem;
+    }
+
+    .next-step-block {
+        margin: 0 1.25rem 1.25rem;
+    }
+
+    .appointment-header {
+        padding: 1rem 1.25rem;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .appointment-actions {
+        padding: 0 1.25rem 1.25rem;
+        flex-direction: column;
+    }
+
+    .appointment-actions .btn-sm {
+        width: 100%;
+        text-align: center;
+    }
+
+    .waiting-note {
+        margin-right: 0;
+    }
 }

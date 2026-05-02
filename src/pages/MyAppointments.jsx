@@ -346,6 +346,7 @@ function StatusBadge({ status }) {
         pending_payment: { text: 'ငွေပေးချေရန် ကျန်ရှိ', cls: 'status-pending' },
         payment_submitted: { text: 'ငွေပေးချေမှု စစ်ဆေးနေ', cls: 'status-submitted' },
         confirmed: { text: 'အတည်ပြုပြီး', cls: 'status-confirmed' },
+        records_reviewed: { text: 'မှတ်တမ်း စစ်ဆေးပြီး', cls: 'status-reviewed' },
         rejected: { text: 'ပယ်ဖျက်ပြီး', cls: 'status-rejected' },
         completed: { text: 'ပြီးဆုံးပြီး', cls: 'status-completed' },
     }
