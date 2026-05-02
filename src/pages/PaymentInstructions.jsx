@@ -1,272 +1,273 @@
 import { useEffect, useState } from 'react'
-import { useLocation, Link, useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import './PaymentInstructions.css'
+
+const CHANNEL_INFO = {
+    telegram:    { label: 'Telegram',    icon: '✈️',  color: '#2aabee' },
+    viber:       { label: 'Viber',       icon: '📳',  color: '#7360f2' },
+    whatsapp:    { label: 'WhatsApp',    icon: '💬',  color: '#25d366' },
+    zoom:        { label: 'Zoom',        icon: '🎥',  color: '#2d8cff' },
+    google_meet: { label: 'Google Meet', icon: '📹',  color: '#00897b' },
+}
 
 function PaymentInstructions() {
     const navigate = useNavigate()
     const location = useLocation()
     const { bookingData: initialBookingData } = location.state || {}
+
     const [screenshot, setScreenshot] = useState(null)
     const [screenshotPreview, setScreenshotPreview] = useState('')
     const [isUploading, setIsUploading] = useState(false)
+    const [uploaded, setUploaded] = useState(false)
+
     const bookingData = initialBookingData || (() => {
-        const stored = sessionStorage.getItem('bookingData');
-        return stored ? JSON.parse(stored) : {};
+        const stored = sessionStorage.getItem('bookingData')
+        return stored ? JSON.parse(stored) : {}
     })()
 
     useEffect(() => {
         window.scrollTo(0, 0)
-        // Save to sessionStorage in case of refresh
         if (initialBookingData) {
             sessionStorage.setItem('bookingData', JSON.stringify(initialBookingData))
         }
-
-        // If no booking data, redirect to booking section
-        if (!bookingData || !bookingData.phone) {
-            alert('Please complete your booking first.')
+        if (!bookingData?.phone) {
             navigate('/#consultation')
         }
-    }, [initialBookingData, bookingData, navigate])
+    }, [])
 
-    const getSectionDisplay = (section) => {
-        const sections = {
-            'morning': 'နံနက်ပိုင်း (၉:၀၀ - ၁၂:၀၀)',
-            'evening': 'ညနေပိုင်း (၂:၀၀ - ၈:၀၀)'
-        };
-        return sections[section] || '';
-    };
+    const channel = CHANNEL_INFO[bookingData?.preferred_channel] || null
+
+    const formatDate = (d) => {
+        if (!d) return '—'
+        return new Date(d).toLocaleDateString('my-MM', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })
+    }
 
     const handleScreenshotChange = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            setScreenshot(file);
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setScreenshotPreview(reader.result);
-            };
-            reader.readAsDataURL(file);
-        }
-    };
+        const file = e.target.files[0]
+        if (!file) return
+        setScreenshot(file)
+        const reader = new FileReader()
+        reader.onloadend = () => setScreenshotPreview(reader.result)
+        reader.readAsDataURL(file)
+    }
 
     const handleSubmitProof = async () => {
-        if (!screenshot) {
-            alert('ငွေပေးချေမှုပုံရိပ် တင်ပို့ရန် လိုအပ်ပါသည်');
-            return;
-        }
-        if (!bookingData?.phone) {
-            alert('Booking data not found. Please try booking again.');
-            return;
-        }
-
-        const bookingId = bookingData.id
-        if (!bookingId) {
-            alert('Could not find booking record. Please contact support.');
-            return;
-        }
-
-        setIsUploading(true);
-
+        if (!screenshot) { alert('ငွေပေးချေမှုပုံရိပ် တင်ပို့ရန် လိုအပ်ပါသည်'); return }
+        if (!bookingData?.id) { alert('Booking ID မတွေ့ပါ။ Support နှင့် ဆက်သွယ်ပါ။'); return }
+        setIsUploading(true)
         try {
             const formData = new FormData()
             formData.append('screenshot', screenshot)
-
-            const response = await fetch(`/api/bookings/${bookingId}/payment-upload`, {
-                method: 'PATCH',
-                body: formData
-            });
-
-            if (!response.ok) {
-                const data = await response.json().catch(() => ({}))
-                throw new Error(data.error || 'Failed to update payment status');
+            const res = await fetch(`/api/bookings/${bookingData.id}/payment-upload`, {
+                method: 'PATCH', body: formData
+            })
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}))
+                throw new Error(data.error || 'Upload failed')
             }
-
-            alert('ငွေပေးချေမှုအထောက်အထား တင်ပို့ပြီးပါပြီ။ ဆရာဝန်၏ အတည်ပြုချက်ကို စောင့်ဆိုင်းပါ။');
-        } catch (error) {
-            console.error('Upload error:', error);
-            alert(`Upload failed: ${error.message}`);
+            setUploaded(true)
+        } catch (err) {
+            alert(`မအောင်မြင်ပါ: ${err.message}`)
         } finally {
-            setIsUploading(false);
+            setIsUploading(false)
         }
-    };
+    }
 
     return (
-        <div className="payment-instructions-page">
+        <div className="pi-page">
             <Navbar />
 
-            <section className="payment-hero">
-                <div className="payment-hero__bg-orbs">
-                    <div className="payment-hero__orb payment-hero__orb--1"></div>
-                    <div className="payment-hero__orb payment-hero__orb--2"></div>
+            <div className="pi-bg-orbs">
+                <div className="pi-orb pi-orb--1" />
+                <div className="pi-orb pi-orb--2" />
+            </div>
+
+            <div className="container pi-container">
+
+                {/* ── Header ── */}
+                <div className="pi-header">
+                    <div className="pi-header__icon">📅</div>
+                    <h1 className="pi-header__title">ချိန်းဆိုမှု လျှောက်ထားပြီးပါပြီ!</h1>
+                    <p className="pi-header__sub">အောက်ပါ အဆင့်များကို တဆင့်ချင်း လိုက်နာပြီး ငွေပေးချေပါ။ ဆရာဝန်က စစ်ဆေးပြီး အတည်ပြုပေးပါမည်။</p>
                 </div>
 
-                <div className="container">
-                    <div className="payment-content animate-scale">
-                        <div className="payment-checkmark">
-                            <span>📅</span>
-                        </div>
-
-                        <h1 className="payment-title">
-                            ချိန်းဆိုမှု လျှောက်ထားပြီးပါပြီ!
-                        </h1>
-
-                        <p className="payment-subtitle">
-                            သင့်ချိန်းဆိုမှုကို လက်ခံရရှိပါပြီ။ အောက်ပါ ငွေပေးချေမှုညွှန်ကြားချက်များကို လိုက်နာပြီး ငွေပေးချေပြီးပါက ဆရာဝန်က အတည်ပြုချက်ပေးပါလိမ့်မည်။
-                        </p>
-
-                        <div className="payment-card glass-card">
-                            <div className="payment-card__header">
-                                <h2>ငွေပေးချေမှုအသေးစိတ်</h2>
+                {/* ── Booking summary strip ── */}
+                <div className="pi-summary glass-card">
+                    <div className="pi-summary__item">
+                        <span className="pi-summary__label">အမည်</span>
+                        <span className="pi-summary__value">{bookingData?.name || '—'}</span>
+                    </div>
+                    <div className="pi-summary__sep" />
+                    <div className="pi-summary__item">
+                        <span className="pi-summary__label">နေ့ရက်</span>
+                        <span className="pi-summary__value">{formatDate(bookingData?.preferred_date)}</span>
+                    </div>
+                    <div className="pi-summary__sep" />
+                    <div className="pi-summary__item">
+                        <span className="pi-summary__label">အချိန်</span>
+                        <span className="pi-summary__value">{bookingData?.preferred_time || '—'}</span>
+                    </div>
+                    {channel && (
+                        <>
+                            <div className="pi-summary__sep" />
+                            <div className="pi-summary__item">
+                                <span className="pi-summary__label">Channel</span>
+                                <span className="pi-summary__value pi-summary__channel" style={{ color: channel.color }}>
+                                    {channel.icon} {channel.label}
+                                </span>
                             </div>
+                        </>
+                    )}
+                </div>
 
-                            <div className="payment-details">
-                                <div className="payment-detail">
-                                    <span className="payment-label">အမည်:</span>
-                                    <span className="payment-value">{bookingData?.name || 'N/A'}</span>
-                                </div>
-                                <div className="payment-detail">
-                                    <span className="payment-label">နေ့ရက်:</span>
-                                    <span className="payment-value">{bookingData?.preferred_date || 'N/A'}</span>
-                                </div>
-                                <div className="payment-detail">
-                                    <span className="payment-label">အချိန်:</span>
-                                    <span className="payment-value">{bookingData?.preferred_time || 'N/A'}</span>
-                                </div>
-                                {bookingData?.booking_section && (
-                                    <div className="payment-detail">
-                                        <span className="payment-label">အပိုင်း:</span>
-                                        <span className={`payment-value section-badge section--${bookingData.booking_section}`}>
-                                            {getSectionDisplay(bookingData.booking_section)}
-                                        </span>
-                                    </div>
-                                )}
-                                <div className="payment-detail">
-                                    <span className="payment-label">တိုင်ပင်ခ နှုန်း:</span>
-                                    <span className="payment-value">၁၀,၀၀၀ ကျပ်</span>
-                                </div>
-                                <div className="payment-detail">
-                                    <span className="payment-label">တိုင်ပင်ချိန်:</span>
-                                    <span className="payment-value">၃၀ မိနစ်</span>
-                                </div>
-                                <div className="payment-detail">
-                                    <span className="payment-label">ဖုန်းနံပါတ်:</span>
-                                    <span className="payment-value">09421068582</span>
-                                </div>
-                            </div>
+                {/* ── Step-by-step instructions ── */}
+                <div className="pi-section-label">📋 ငွေပေးချေမှု လုပ်ငန်းစဉ်</div>
 
-                            <div className="payment-methods">
-                                <h3>လက်ခံသော ငွေပေးချေမှုနည်းလမ်းများ</h3>
-                                <div className="payment-methods__grid">
-                                    <div className="payment-method">
-                                        <div className="payment-method__icon">💳</div>
-                                        <div className="payment-method__name">KPay</div>
-                                    </div>
-                                    <div className="payment-method">
-                                        <div className="payment-method__icon">🌊</div>
-                                        <div className="payment-method__name">Wave Pay</div>
-                                    </div>
-                                    <div className="payment-method">
-                                        <div className="payment-method__icon">💙</div>
-                                        <div className="payment-method__name">AYA Pay</div>
-                                    </div>
-                                    <div className="payment-method">
-                                        <div className="payment-method__icon">🟡</div>
-                                        <div className="payment-method__name">CB Pay</div>
-                                    </div>
-                                </div>
-                            </div>
+                <div className="pi-steps">
 
-                            <div className="payment-upload-section">
-                                <h3>ငွေပေးချေမှုပုံရိပ် တင်ပို့ရန်</h3>
-                                <p className="upload-description">
-                                    ငွေလွှဲပြောင်းပြီးပါက ငွေလွှဲပြောင်းမှုအရ ပုံရိပ် (Screenshot) ကို အောက်တွင် တင်ပို့ပါ။
-                                </p>
-                                <div className="upload-area">
-                                    <input
-                                        type="file"
-                                        accept="image/*"
-                                        onChange={handleScreenshotChange}
-                                        className="file-input"
-                                        id="screenshot-upload"
-                                    />
-                                    <label htmlFor="screenshot-upload" className="upload-label">
-                                        {screenshotPreview ? (
-                                            <img src={screenshotPreview} alt="Payment Proof" className="screenshot-preview" />
-                                        ) : (
-                                            <>
-                                                <span className="upload-icon">📷</span>
-                                                <span>ပုံရိပ် ရွေးချယ်ရန် နှိပ်ပါ</span>
-                                            </>
-                                        )}
-                                    </label>
-                                </div>
-                                <button
-                                    onClick={handleSubmitProof}
-                                    disabled={isUploading || !screenshot}
-                                    className="btn btn-primary btn-lg btn-block"
-                                >
-                                    {isUploading ? 'တင်ပို့နေသည်...' : 'ငွေပေးချေမှုအထောက်အထား တင်ပို့ရန်'}
-                                </button>
-                            </div>
-
-                            <div className="payment-instructions">
-                                <h3>ငွေပေးချေမှုညွှန်ကြားချက်များ</h3>
-                                <ol className="payment-steps">
-                                    <li>
-                                        အထက်ဖော်ပြပါ ဖုန်းနံပါတ် (09421068582) သို့ လိုအပ်သော ငွေပမာဏ (၁၀,၀၀၀ ကျပ်) ကို သင့်နှစ်သက်ရာ ငွေပေးချေမှုအက်ပ်ဖြင့် လွှဲပြောင်းပါ။
-                                    </li>
-                                    <li>
-                                        ငွေလွှဲပြောင်းပြီးပါက ငွေလွှဲပြောင်းမှုအရ ပုံရိပ် (Screenshot) ကို သိမ်းဆည်းထားပါ။
-                                    </li>
-                                    <li>
-                                        ပုံရိပ်ကို အပေါ်တွင် တင်ပို့ပြီး "ငွေပေးချေမှုအထောက်အထား တင်ပို့ရန်" ခလုတ်ကို နှိပ်ပါ။
-                                    </li>
-                                </ol>
-                            </div>
-
-                            <div className="medical-records-notice">
-                                <h3>⚕️ ကျန်းမာရေးမှတ်တမ်းများ</h3>
-                                <p>
-                                    တိုင်ပင်ချိန်မတိုင်မီ သင့်ယခင်က ကျန်းမာရေးမှတ်တမ်းများ (ဆေးစစ်ချက်များ၊ ဓာတ်ခွဲစစ်ဆေးချက်များ၊ ဆေးညွှန်းစာများ စသည်တို့) ကို ဆရာဝန်ထံ ပေးပို့ရန် လိုအပ်ပါသည်။
-                                </p>
-                                <p>
-                                    မှတ်တမ်းများကို Telegram သို့မဟုတ် Viber မှတစ်ဆင့် ပေးပို့နိုင်ပါသည်။
-                                </p>
-                            </div>
-
-                            <div className="payment-actions">
-                                <Link
-                                    to={`/booking-confirmation?name=${encodeURIComponent(bookingData?.name || '')}&date=${encodeURIComponent(bookingData?.preferred_date || '')}&time=${encodeURIComponent(bookingData?.preferred_time || '')}&section=${encodeURIComponent(bookingData?.booking_section || '')}&id=${encodeURIComponent(bookingData?.id || '')}`}
-                                    className="btn btn-secondary btn-lg"
-                                >
-                                    အတည်ပြုချက်ကြည့်ရန်
-                                </Link>
-
-                                <div className="payment-contact">
-                                    <p>ငွေပေးချေမှုနှင့် ပတ်သက်သော မေးခွန်းများရှိပါက:</p>
-                                    <div className="contact-options">
-                                        <a
-                                            href="https://t.me/drtunhealthconsultant"
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="contact-link"
-                                        >
-                                            <span>✈️</span> Telegram
-                                        </a>
-                                        <a
-                                            href="viber://chat?number=959987654321"
-                                            className="contact-link"
-                                        >
-                                            <span>💜</span> Viber
-                                        </a>
-                                    </div>
-                                </div>
+                    {/* Step 1 */}
+                    <div className="pi-step glass-card">
+                        <div className="pi-step__num">1</div>
+                        <div className="pi-step__body">
+                            <div className="pi-step__title">ငွေပေးချေမှုအက်ပ် ဖွင့်ပါ</div>
+                            <p className="pi-step__desc">သင့်ဖုန်းမှာ အောက်ပါ အက်ပ်တစ်ခုကို ဖွင့်ပါ</p>
+                            <div className="pi-pay-methods">
+                                <div className="pi-pay-method"><span>💳</span><span>KPay</span></div>
+                                <div className="pi-pay-method"><span>🌊</span><span>Wave Pay</span></div>
+                                <div className="pi-pay-method"><span>💙</span><span>AYA Pay</span></div>
+                                <div className="pi-pay-method"><span>🟡</span><span>CB Pay</span></div>
                             </div>
                         </div>
                     </div>
+
+                    {/* Step 2 */}
+                    <div className="pi-step glass-card">
+                        <div className="pi-step__num">2</div>
+                        <div className="pi-step__body">
+                            <div className="pi-step__title">ဖုန်းနံပါတ်သို့ ငွေလွှဲပါ</div>
+                            <p className="pi-step__desc">အောက်ပါ ဖုန်းနံပါတ်သို့ <strong>တိုင်ပင်ခ ၁၀,၀၀၀ ကျပ်</strong> ကို လွှဲပြောင်းပါ</p>
+                            <div className="pi-phone-box">
+                                <span className="pi-phone-box__label">📞 လက်ခံသူ ဖုန်းနံပါတ်</span>
+                                <span className="pi-phone-box__number">09421068582</span>
+                                <span className="pi-phone-box__amount">၁၀,၀၀၀ ကျပ်</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Step 3 */}
+                    <div className="pi-step glass-card">
+                        <div className="pi-step__num">3</div>
+                        <div className="pi-step__body">
+                            <div className="pi-step__title">Screenshot ရိုက်ပါ</div>
+                            <p className="pi-step__desc">ငွေလွှဲပြောင်းပြီးသောအခါ ငွေလွှဲမှတ်တမ်း screenshot ကို ဖုန်းတွင် သိမ်းဆည်းပါ</p>
+                            <div className="pi-tip">💡 &quot;ငွေပေးချေမှု အောင်မြင်ပါသည်&quot; ဟူသော စာသားပါသော screen ကို screenshot ရိုက်ပါ</div>
+                        </div>
+                    </div>
+
+                    {/* Step 4 — Upload */}
+                    <div className="pi-step pi-step--highlight glass-card">
+                        <div className="pi-step__num pi-step__num--gold">4</div>
+                        <div className="pi-step__body">
+                            <div className="pi-step__title">Screenshot တင်ပို့ပါ</div>
+                            <p className="pi-step__desc">ရိုက်ထားသော screenshot ကို ဤနေရာတွင် တင်ပို့ပါ</p>
+
+                            {uploaded ? (
+                                <div className="pi-upload-success">
+                                    <span>✅</span>
+                                    <span>Screenshot တင်ပို့ပြီးပါပြီ! ဆရာဝန်က စစ်ဆေးပြီး အတည်ပြုပေးပါမည်။</span>
+                                </div>
+                            ) : (
+                                <>
+                                    <div className="pi-upload-area">
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={handleScreenshotChange}
+                                            className="pi-file-input"
+                                            id="pi-screenshot"
+                                        />
+                                        <label htmlFor="pi-screenshot" className="pi-upload-label">
+                                            {screenshotPreview ? (
+                                                <img src={screenshotPreview} alt="Payment proof" className="pi-preview-img" />
+                                            ) : (
+                                                <>
+                                                    <span className="pi-upload-label__icon">📷</span>
+                                                    <span className="pi-upload-label__text">ဤနေရာကို နှိပ်ပြီး ပုံရိပ် ရွေးပါ</span>
+                                                </>
+                                            )}
+                                        </label>
+                                    </div>
+                                    <button
+                                        onClick={handleSubmitProof}
+                                        disabled={isUploading || !screenshot}
+                                        className="btn btn-primary btn-lg btn-block pi-upload-btn"
+                                    >
+                                        {isUploading ? '⏳ တင်ပို့နေသည်...' : '📤 ငွေပေးချေမှုအထောက်အထား တင်ပို့မည်'}
+                                    </button>
+                                </>
+                            )}
+                        </div>
+                    </div>
+
                 </div>
-            </section>
+
+                {/* ── How to check status ── */}
+                <div className="pi-check-status glass-card">
+                    <div className="pi-check-status__icon">🔍</div>
+                    <div className="pi-check-status__body">
+                        <div className="pi-check-status__title">Booking အတည်ပြုချက် စစ်ဆေးနည်း</div>
+                        <p className="pi-check-status__desc">
+                            ဆရာဝန်က ငွေပေးချေမှုကို စစ်ဆေးပြီး <strong>Confirmed</strong> ပြောင်းပေးပါမည်။
+                            သင့် booking အခြေအနေကို ဤနေရာတွင် စစ်ဆေးနိုင်ပါသည်:
+                        </p>
+                        <div className="pi-check-status__steps">
+                            <div className="pi-check-status__step">
+                                <span className="pi-check-status__step-num">①</span>
+                                <span>မျက်နှာစာ menu မှ <strong>&quot;ကျွန်တော့်ချိန်းဆိုမှုများ&quot;</strong> ကို နှိပ်ပါ</span>
+                            </div>
+                            <div className="pi-check-status__step">
+                                <span className="pi-check-status__step-num">②</span>
+                                <span>သင့် <strong>ဖုန်းနံပါတ် ({bookingData?.phone || '09xxx'})</strong> ကို ထည့်ပြီး ရှာပါ</span>
+                            </div>
+                            <div className="pi-check-status__step">
+                                <span className="pi-check-status__step-num">③</span>
+                                <span>Booking status <strong style={{ color: '#4ade80' }}>✅ Confirmed</strong> ဖြစ်ကြောင်း မြင်ရပါမည်</span>
+                            </div>
+                        </div>
+                        <a href="/my-appointments" className="btn btn-secondary pi-check-btn">
+                            🔍 ကျွန်တော့်ချိန်းဆိုမှုများ စစ်ဆေးရန်
+                        </a>
+                    </div>
+                </div>
+
+                {/* ── Medical records note ── */}
+                <div className="pi-records-note glass-card">
+                    <span className="pi-records-note__icon">⚕️</span>
+                    <div>
+                        <div className="pi-records-note__title">ကျန်းမာရေးမှတ်တမ်းများ ပေးပို့ပါ</div>
+                        <p className="pi-records-note__desc">
+                            တိုင်ပင်ချိန်မတိုင်မီ ဆေးစစ်ချက်များ၊ ဓာတ်ခွဲရလဒ်များ၊ ဆေးညွှန်းစာများကို
+                            Telegram သို့မဟုတ် Viber မှတစ်ဆင့် ဆရာဝန်ထံ ပေးပို့ပါ
+                        </p>
+                    </div>
+                </div>
+
+                {/* ── Contact ── */}
+                <div className="pi-contact">
+                    <p className="pi-contact__label">မေးခွန်းများ ရှိပါက ဆက်သွယ်ပါ</p>
+                    <div className="pi-contact__links">
+                        <a href="https://t.me/drtunhealthconsultant" target="_blank" rel="noopener noreferrer" className="pi-contact__link pi-contact__link--telegram">
+                            ✈️ Telegram
+                        </a>
+                        <a href="viber://chat?number=959421068582" className="pi-contact__link pi-contact__link--viber">
+                            📳 Viber
+                        </a>
+                    </div>
+                </div>
+
+            </div>
 
             <Footer />
         </div>
