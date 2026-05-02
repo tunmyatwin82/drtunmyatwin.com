@@ -2,11 +2,17 @@ import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
 import multer from 'multer'
+import { fileURLToPath } from 'url'
+import { dirname, join } from 'path'
+import { existsSync } from 'fs'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
 
 dotenv.config()
 
 const app = express()
-const PORT = process.env.PORT || 8787
+const PORT = process.env.PORT || 8000
 
 const NOCODB_API_URL = process.env.NOCODB_API_URL || process.env.VITE_NOCODB_API_URL || 'https://db.drtunmyatwin.com'
 const NOCODB_BOOKING_TABLE_ID = process.env.NOCODB_BOOKING_TABLE_ID || 'mkuij3x9lav2v81'
@@ -286,6 +292,14 @@ app.patch('/api/admin/bookings/:id/status', requireAdmin, async (req, res) => {
         res.status(500).json({ error: error.message })
     }
 })
+
+const distPath = join(__dirname, '..', 'dist')
+if (existsSync(distPath)) {
+    app.use(express.static(distPath))
+    app.get('*', (_req, res) => {
+        res.sendFile(join(distPath, 'index.html'))
+    })
+}
 
 app.listen(PORT, () => {
     console.log(`API server listening on http://localhost:${PORT}`)
