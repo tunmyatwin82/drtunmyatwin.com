@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import './MedicalRecordsUpload.css'
@@ -13,7 +13,7 @@ function MedicalRecordsUpload() {
     const [uploadSuccess, setUploadSuccess] = useState(false)
     const fileInputRef = useRef(null)
 
-    // Search state (used when no ?id= is provided)
+    // Search state
     const [searchTerm, setSearchTerm] = useState('')
     const [searchType, setSearchType] = useState('phone')
     const [isSearching, setIsSearching] = useState(false)
@@ -21,24 +21,20 @@ function MedicalRecordsUpload() {
     const [hasSearched, setHasSearched] = useState(false)
 
     const handleSearch = async () => {
-        if (!searchTerm.trim()) {
-            alert('ဖုန်းနံပါတ် သို့မဟုတ် အီးမေးလ် ထည့်ပေးပါ')
-            return
-        }
+        if (!searchTerm.trim()) { alert('ဖုန်းနံပါတ် သို့မဟုတ် အီးမေးလ် ထည့်ပေးပါ'); return }
         setIsSearching(true)
         setHasSearched(true)
         try {
             const params = new URLSearchParams({ type: searchType, value: searchTerm })
-            const response = await fetch(`/api/bookings/search?${params.toString()}`)
-            if (!response.ok) throw new Error('Search failed')
-            const data = await response.json()
-            // Only show confirmed bookings for medical record upload
-            setSearchResults((data || []).filter(apt => {
-                const ct = apt.ConsultationType || ''
-                return ct === 'status:confirmed' || apt.BookingStatus === 'confirmed' || apt.PaymentStatus === 'confirmed'
-            }))
-        } catch (error) {
-            console.error('Search error:', error)
+            const res = await fetch(`/api/bookings/search?${params.toString()}`)
+            if (!res.ok) throw new Error('Search failed')
+            const data = await res.json()
+            setSearchResults((data || []).filter(apt =>
+                apt.ConsultationType === 'status:confirmed' ||
+                apt.BookingStatus === 'confirmed' ||
+                apt.PaymentStatus === 'confirmed'
+            ))
+        } catch {
             alert('ရှာဖွေမှု မအောင်မြင်ပါ။')
             setSearchResults([])
         } finally {
@@ -52,39 +48,35 @@ function MedicalRecordsUpload() {
         setSearchParams({ id })
     }
 
-    const handleFileChange = (e) => {
-        const selectedFiles = Array.from(e.target.files)
-
+    const addFiles = (selectedFiles) => {
         const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf']
         const maxSize = 10 * 1024 * 1024
 
-        const validFiles = selectedFiles.filter(file => {
-            if (!validTypes.includes(file.type)) {
-                alert(`File ${file.name} is not a supported format. Please upload JPG, PNG, or PDF files.`)
-                return false
-            }
-            if (file.size > maxSize) {
-                alert(`File ${file.name} is too large. Maximum size is 10MB.`)
-                return false
-            }
+        const valid = selectedFiles.filter(f => {
+            if (!validTypes.includes(f.type)) { alert(`${f.name} — JPG, PNG, PDF သာ လက်ခံသည်`); return false }
+            if (f.size > maxSize) { alert(`${f.name} — ဖိုင်အရွယ်အစား 10MB ကျော်သည်`); return false }
             return true
         })
 
-        if (validFiles.length > 0) {
-            setFiles(prev => [...prev, ...validFiles])
+        if (!valid.length) return
 
-            validFiles.forEach(file => {
-                if (file.type.startsWith('image/')) {
-                    const reader = new FileReader()
-                    reader.onloadend = () => {
-                        setPreviews(prev => [...prev, { name: file.name, url: reader.result, type: file.type }])
-                    }
-                    reader.readAsDataURL(file)
-                } else {
-                    setPreviews(prev => [...prev, { name: file.name, url: null, type: file.type }])
-                }
-            })
-        }
+        setFiles(prev => [...prev, ...valid])
+        valid.forEach(f => {
+            if (f.type.startsWith('image/')) {
+                const reader = new FileReader()
+                reader.onloadend = () =>
+                    setPreviews(prev => [...prev, { name: f.name, url: reader.result, type: f.type }])
+                reader.readAsDataURL(f)
+            } else {
+                setPreviews(prev => [...prev, { name: f.name, url: null, type: f.type }])
+            }
+        })
+    }
+
+    const handleFileChange = (e) => {
+        addFiles(Array.from(e.target.files))
+        // Reset input so same file can be re-added after removal
+        e.target.value = ''
     }
 
     const removeFile = (index) => {
@@ -92,250 +84,223 @@ function MedicalRecordsUpload() {
         setPreviews(prev => prev.filter((_, i) => i !== index))
     }
 
-const handleUpload = async () => {
-        if (files.length === 0) {
-            alert('ကျန်းမာရေးမှတ်တမ်းများ ရွေးချယ်ရန် လိုအပ်ပါသည်')
-            return
-        }
-        if (!bookingId) {
-            alert('Booking ID not found. Please select a booking first.')
-            return
-        }
-
+    const handleUpload = async () => {
+        if (!files.length) { alert('ကျန်းမာရေးမှတ်တမ်းများ ရွေးချယ်ရန် လိုအပ်ပါသည်'); return }
+        if (!bookingId) { alert('Booking ID မတွေ့ပါ။'); return }
         setIsUploading(true)
-
         try {
-            // Create a FormData object to properly send files
-            const formData = new FormData();
-            
-            // Append files to FormData
-            files.forEach((file) => {
-                formData.append('files', file);
-            });
-            
-            // Also append bookingId for reference
-            formData.append('bookingId', bookingId);
-
-            const response = await fetch(`/api/bookings/${bookingId}/medical-records`, {
-                method: 'PATCH',
-                body: formData
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to upload medical records')
-            }
-
+            const formData = new FormData()
+            files.forEach(f => formData.append('files', f))
+            formData.append('bookingId', bookingId)
+            const res = await fetch(`/api/bookings/${bookingId}/medical-records`, {
+                method: 'PATCH', body: formData
+            })
+            if (!res.ok) throw new Error('Upload failed')
             setUploadSuccess(true)
-            alert('ကျန်းမာရေးမှတ်တမ်းများ တင်ပြီးပါပြီ။ ဆရာဝန်က စစ်ဆေးပြီး အကြောင်းပြန်ပါလိမ့်မည်။')
-        } catch (error) {
-            console.error('Upload error:', error)
-            alert('Upload failed. Please try again.')
+        } catch (err) {
+            alert(`မအောင်မြင်ပါ: ${err.message}`)
         } finally {
             setIsUploading(false)
         }
     }
 
-    const triggerFileInput = () => {
-        fileInputRef.current?.click()
-    }
-
     return (
-        <div className="medical-records-page">
+        <div className="mr-page">
             <Navbar />
 
-            <section className="medical-records-hero">
-                <div className="medical-records-hero__bg-orbs">
-                    <div className="medical-records-hero__orb medical-records-hero__orb--1"></div>
-                    <div className="medical-records-hero__orb medical-records-hero__orb--2"></div>
+            <div className="mr-bg-orbs">
+                <div className="mr-orb mr-orb--1" />
+                <div className="mr-orb mr-orb--2" />
+            </div>
+
+            <div className="container mr-container">
+
+                {/* Header */}
+                <div className="mr-header">
+                    <div className="mr-header__icon">📋</div>
+                    <h1 className="mr-header__title">ကျန်းမာရေးမှတ်တမ်းများ တင်ပို့ရန်</h1>
+                    <p className="mr-header__sub">
+                        တိုင်ပင်ဆွေးနွေးမှုမတိုင်မီ ဆေးစစ်ချက်များ၊ ဓာတ်ခွဲရလဒ်များ၊ ဆေးညွှန်းစာများ တင်ပါ
+                    </p>
                 </div>
 
-                <div className="container">
-                    <div className="medical-records-content animate-scale">
-                        <div className="medical-records-checkmark">
-                            <span>📋</span>
+                {/* ── Search booking (no id in URL) ── */}
+                {!bookingId && !uploadSuccess && (
+                    <div className="mr-card glass-card">
+                        <div className="mr-card__title">ချိန်းဆိုမှု ရှာဖွေရန်</div>
+                        <p className="mr-card__sub">ဖုန်းနံပါတ် သို့မဟုတ် အီးမေးလ်ဖြင့် ရှာဖွေပါ (အတည်ပြုပြီးသော bookings သာ ပြသမည်)</p>
+
+                        <div className="mr-search-toggle">
+                            <button
+                                className={`mr-toggle-btn ${searchType === 'phone' ? 'active' : ''}`}
+                                onClick={() => setSearchType('phone')}
+                            >📱 ဖုန်းနံပါတ်</button>
+                            <button
+                                className={`mr-toggle-btn ${searchType === 'email' ? 'active' : ''}`}
+                                onClick={() => setSearchType('email')}
+                            >📧 အီးမေးလ်</button>
                         </div>
 
-                        <h1 className="medical-records-title">
-                            ကျန်းမာရေးမှတ်တမ်းများ တင်ပို့ရန်
-                        </h1>
+                        <div className="mr-search-row">
+                            <input
+                                type={searchType === 'phone' ? 'tel' : 'email'}
+                                value={searchTerm}
+                                onChange={e => setSearchTerm(e.target.value)}
+                                onKeyDown={e => e.key === 'Enter' && handleSearch()}
+                                placeholder={searchType === 'phone' ? '09xxxxxxxxx' : 'example@email.com'}
+                                className="form-input"
+                            />
+                            <button onClick={handleSearch} disabled={isSearching} className="btn btn-primary">
+                                {isSearching ? 'ရှာနေ...' : '🔍 ရှာမည်'}
+                            </button>
+                        </div>
 
-                        <p className="medical-records-subtitle">
-                            တိုင်ပင်ဆွေးနွေးမှုမတိုင်မီ သင့်ကျန်းမာရေးမှတ်တမ်းများ (ဆေးစစ်ချက်များ၊ ဓာတ်ခွဲစစ်ဆေးချက်များ၊ ဆေးညွှန်းစာများ) ကို တင်ပို့ပါ။
+                        {hasSearched && (
+                            searchResults.length === 0 ? (
+                                <p className="mr-empty">အတည်ပြုပြီးသော ချိန်းဆိုမှုများ မတွေ့ပါ</p>
+                            ) : (
+                                <div className="mr-results">
+                                    {searchResults.map(apt => (
+                                        <button
+                                            key={apt.Id || apt.id}
+                                            className="mr-result-item glass-card"
+                                            onClick={() => selectBooking(apt)}
+                                        >
+                                            <strong>{apt.Name}</strong>
+                                            <span>{apt.PreferredDate} {apt.PreferredTime?.split(' ')[1]?.slice(0, 5) || ''}</span>
+                                            <small>ID: {apt.Id || apt.id} &nbsp;✅ အတည်ပြုပြီး</small>
+                                        </button>
+                                    ))}
+                                </div>
+                            )
+                        )}
+                    </div>
+                )}
+
+                {/* ── Upload area (booking id known) ── */}
+                {bookingId && !uploadSuccess && (
+                    <div className="mr-card glass-card">
+                        <div className="mr-card__title">မှတ်တမ်းများ တင်ပို့ရန်</div>
+                        <div className="mr-booking-badge">Booking ID: {bookingId}</div>
+
+                        {/* Hidden file input — triggered only by label */}
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            onChange={handleFileChange}
+                            accept="image/jpeg,image/png,image/jpg,application/pdf"
+                            multiple
+                            className="mr-file-input"
+                            id="mr-file-input"
+                        />
+
+                        {/* Drop zone — label only, no wrapping onClick div */}
+                        {files.length === 0 && (
+                            <label htmlFor="mr-file-input" className="mr-drop-zone">
+                                <span className="mr-drop-zone__icon">📤</span>
+                                <span className="mr-drop-zone__text">ဤနေရာကို နှိပ်ပြီး ဖိုင်ရွေးပါ</span>
+                                <span className="mr-drop-zone__hint">JPG · PNG · PDF &nbsp;(တစ်ဖိုင် အများဆုံး 10MB)</span>
+                            </label>
+                        )}
+
+                        {/* File list */}
+                        {files.length > 0 && (
+                            <div className="mr-file-list">
+                                {previews.map((p, i) => (
+                                    <div key={i} className="mr-file-item">
+                                        <div className="mr-file-item__preview">
+                                            {p.url
+                                                ? <img src={p.url} alt={p.name} className="mr-file-item__img" />
+                                                : <span className="mr-file-item__pdf">📄</span>
+                                            }
+                                        </div>
+                                        <span className="mr-file-item__name">{p.name}</span>
+                                        <button
+                                            type="button"
+                                            className="mr-file-item__remove"
+                                            onClick={() => removeFile(i)}
+                                            title="ဖယ်ရှားရန်"
+                                        >✕</button>
+                                    </div>
+                                ))}
+
+                                {/* Add more button */}
+                                <label htmlFor="mr-file-input" className="mr-add-more">
+                                    <span>＋</span>
+                                    <span>နောက်ထပ်ဖိုင် ထပ်ထည့်ရန်</span>
+                                </label>
+                            </div>
+                        )}
+
+                        <button
+                            onClick={handleUpload}
+                            disabled={isUploading || !files.length}
+                            className="btn btn-primary btn-lg btn-block mr-submit-btn"
+                        >
+                            {isUploading
+                                ? '⏳ တင်ပို့နေသည်...'
+                                : `📤 မှတ်တမ်း ${files.length ? `(${files.length} ဖိုင်) ` : ''}တင်ပို့မည်`}
+                        </button>
+                    </div>
+                )}
+
+                {/* ── Success state ── */}
+                {uploadSuccess && (
+                    <div className="mr-success glass-card">
+                        <div className="mr-success__icon">✅</div>
+                        <h2 className="mr-success__title">မှတ်တမ်းများ တင်ပြီးပါပြီ!</h2>
+                        <p className="mr-success__desc">
+                            ဆရာဝန်က သင့်မှတ်တမ်းများကို စစ်ဆေးပါမည်။
+                            စစ်ဆေးပြီးပါက တိုင်ပင်ဆွေးနွေးမှုကို အတည်ပြုပါမည်။
                         </p>
 
-                        {/* Step 1: Find booking if no ID provided */}
-                        {!bookingId && !uploadSuccess && (
-                            <div className="medical-records-card glass-card">
-                                <div className="medical-records-card__header">
-                                    <h2>ချိန်းဆိုမှု ရှာဖွေရန်</h2>
-                                    <p style={{ opacity: 0.7, marginTop: '0.5rem' }}>
-                                        သင့်ဖုန်းနံပါတ် သို့မဟုတ် အီးမေးလ်ဖြင့် ချိန်းဆိုမှုကို ရှာဖွေပါ
-                                    </p>
-                                </div>
+                        {/* Next steps */}
+                        <div className="mr-next-steps">
+                            <div className="mr-next-steps__title">နောက်ဆက်တွဲ လုပ်ဆောင်ရမည့် အဆင့်များ</div>
 
-                                <div className="search-type-toggle" style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
-                                    <button
-                                        className={`btn ${searchType === 'phone' ? 'btn-primary' : 'btn-secondary'} btn-sm`}
-                                        onClick={() => setSearchType('phone')}
-                                    >
-                                        📱 ဖုန်းနံပါတ်
-                                    </button>
-                                    <button
-                                        className={`btn ${searchType === 'email' ? 'btn-primary' : 'btn-secondary'} btn-sm`}
-                                        onClick={() => setSearchType('email')}
-                                    >
-                                        📧 အီးမေးလ်
-                                    </button>
-                                </div>
-
-                                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
-                                    <input
-                                        type={searchType === 'phone' ? 'tel' : 'email'}
-                                        value={searchTerm}
-                                        onChange={(e) => setSearchTerm(e.target.value)}
-                                        placeholder={searchType === 'phone' ? '09xxxxxxxxx' : 'example@email.com'}
-                                        className="form-input"
-                                        style={{ flex: 1 }}
-                                        onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                                    />
-                                    <button
-                                        onClick={handleSearch}
-                                        disabled={isSearching}
-                                        className="btn btn-primary"
-                                    >
-                                        {isSearching ? 'ရှာနေ...' : '🔍 ရှာရန်'}
-                                    </button>
-                                </div>
-
-                                {hasSearched && (
-                                    <div>
-                                        {searchResults.length === 0 ? (
-                                            <p style={{ textAlign: 'center', opacity: 0.7 }}>
-                                                အတည်ပြုပြီးသော ချိန်းဆိုမှုများ မတွေ့ပါ။
-                                            </p>
-                                        ) : (
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                                {searchResults.map((apt) => (
-                                                    <button
-                                                        key={apt.Id || apt.id}
-                                                        className="glass-card"
-                                                        onClick={() => selectBooking(apt)}
-                                                        style={{
-                                                            padding: '1rem',
-                                                            textAlign: 'left',
-                                                            cursor: 'pointer',
-                                                            border: '1px solid rgba(255,255,255,0.15)',
-                                                            background: 'rgba(255,255,255,0.05)',
-                                                            borderRadius: '0.5rem',
-                                                            color: 'inherit'
-                                                        }}
-                                                    >
-                                                        <strong>{apt.Name}</strong> — {apt.PreferredDate} {apt.PreferredTime ? apt.PreferredTime.split(' ')[1]?.slice(0, 5) : ''}
-                                                        <br />
-                                                        <small style={{ opacity: 0.7 }}>ID: {apt.Id || apt.id} | ✅ အတည်ပြုပြီး</small>
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-                        )}
-
-                        {/* Step 2: Upload files (shown when booking ID is available) */}
-                        {bookingId && !uploadSuccess && (
-                            <div className="medical-records-card glass-card">
-                                <div className="medical-records-card__header">
-                                    <h2>မှတ်တမ်းများ တင်ပို့ရန်</h2>
-                                    <p style={{ opacity: 0.7, fontSize: '0.85rem', marginTop: '0.25rem' }}>
-                                        Booking ID: {bookingId}
-                                    </p>
-                                </div>
-
-                                <div className="upload-area" onClick={triggerFileInput}>
-                                    <input
-                                        type="file"
-                                        ref={fileInputRef}
-                                        onChange={handleFileChange}
-                                        accept="image/jpeg,image/png,image/jpg,application/pdf"
-                                        multiple
-                                        className="file-input"
-                                        id="medical-records-upload"
-                                    />
-                                    <label htmlFor="medical-records-upload" className="upload-label">
-                                        <span className="upload-icon">📤</span>
-                                        <span className="upload-text">ဖိုင်များ ရွေးချယ်ရန် နှိပ်ပါ</span>
-                                        <span className="upload-hint">JPG, PNG, PDF (Max 10MB each)</span>
-                                    </label>
-                                </div>
-
-                                {files.length > 0 && (
-                                    <div className="selected-files">
-                                        <h3>ရွေးချယ်ထားသော ဖိုင်များ ({files.length})</h3>
-                                        <div className="files-list">
-                                            {previews.map((preview, index) => (
-                                                <div key={index} className="file-item">
-                                                    <div className="file-info">
-                                                        {preview.url ? (
-                                                            <img src={preview.url} alt={preview.name} className="file-preview" />
-                                                        ) : (
-                                                            <div className="file-icon">📄</div>
-                                                        )}
-                                                        <span className="file-name">{preview.name}</span>
-                                                    </div>
-                                                    <button
-                                                        onClick={() => removeFile(index)}
-                                                        className="remove-file-btn"
-                                                        type="button"
-                                                    >
-                                                        ✕
-                                                    </button>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                <button
-                                    onClick={handleUpload}
-                                    disabled={isUploading || files.length === 0}
-                                    className="btn btn-primary btn-lg btn-block"
-                                >
-                                    {isUploading ? 'တင်ပို့နေသည်...' : 'မှတ်တမ်းများ တင်ပို့ရန်'}
-                                </button>
-
-                                <div className="upload-notice">
-                                    <p>
-                                        <strong>မှတ်ချက်:</strong> တင်ပို့ပြီးသော မှတ်တမ်းများကို ဆရာဝန်က စစ်ဆေးပြီး တိုင်ပင်ဆွေးနွေးမှုမတိုင်မီ အကြောင်းပြန်ပါလိမ့်မည်။
-                                    </p>
+                            <div className="mr-next-step">
+                                <span className="mr-next-step__num">①</span>
+                                <div>
+                                    <div className="mr-next-step__head">ဆရာဝန်၏ အတည်ပြုချက် စောင့်ပါ</div>
+                                    <p className="mr-next-step__body">မှတ်တမ်းများ စစ်ဆေးပြီး ၁-၂ ရက်အတွင်း Booking status ကို <strong style={{ color: '#4ade80' }}>Confirmed</strong> ပြောင်းပေးပါမည်</p>
                                 </div>
                             </div>
-                        )}
 
-                        {/* Step 3: Success */}
-                        {uploadSuccess && (
-                            <div className="upload-success glass-card">
-                                <div className="success-icon">✅</div>
-                                <h2>မှတ်တမ်းများ တင်ပြီးပါပြီ!</h2>
-                                <p>ဆရာဝန်က သင့်မှတ်တမ်းများကို စစ်ဆေးပြီး တိုင်ပင်ဆွေးနွေးမှုအတွက် အကြောင်းပြန်ပါလိမ့်မည်။</p>
-                                <div className="success-actions">
-                                    <Link to="/" className="btn btn-secondary">
-                                        ပင်မစာမျက်နှာသို့ ပြန်သွားရန်
-                                    </Link>
-                                    <a
-                                        href="https://t.me/drtunhealthconsultant"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="btn btn-primary"
-                                    >
-                                        <span>✈️</span> Telegram မှ ဆက်သွယ်ရန်
+                            <div className="mr-next-step">
+                                <span className="mr-next-step__num">②</span>
+                                <div>
+                                    <div className="mr-next-step__head">Booking status စစ်ဆေးရန်</div>
+                                    <p className="mr-next-step__body">မျက်နှာစာမှ <strong>"ကျွန်တော့်ချိန်းဆိုမှုများ"</strong> ကိုနှိပ်ပြီး သင့်ဖုန်းနံပါတ်ဖြင့် စစ်ဆေးနိုင်သည်</p>
+                                    <a href="/my-appointments" className="btn btn-secondary mr-next-step__btn">
+                                        🔍 ကျွန်တော့်ချိန်းဆိုမှု စစ်ဆေးရန်
                                     </a>
                                 </div>
                             </div>
-                        )}
+
+                            <div className="mr-next-step">
+                                <span className="mr-next-step__num">③</span>
+                                <div>
+                                    <div className="mr-next-step__head">ချိန်းဆိုထားသော channel မှ ဆရာဝန်ဆက်သွယ်မည်</div>
+                                    <p className="mr-next-step__body">Booking confirm ဖြစ်ပြီးသည့်နောက် သတ်မှတ်ချိန်တွင် သင်ရွေးထားသော channel (Telegram / Viber / WhatsApp / Zoom / Google Meet) မှတဆင့် ဆရာဝန်က ဆက်သွယ်ပါမည်</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="mr-success__contact">
+                            <p>မေးခွန်းများ ရှိပါက</p>
+                            <div className="mr-success__contact-links">
+                                <a href="https://t.me/drtunhealthconsultant" target="_blank" rel="noopener noreferrer" className="mr-contact-link mr-contact-link--tg">
+                                    ✈️ Telegram
+                                </a>
+                                <a href="viber://chat?number=959421068582" className="mr-contact-link mr-contact-link--vb">
+                                    📳 Viber
+                                </a>
+                            </div>
+                        </div>
                     </div>
-                </div>
-            </section>
+                )}
+
+            </div>
 
             <Footer />
         </div>
