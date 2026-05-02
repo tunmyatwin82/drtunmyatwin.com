@@ -5,11 +5,11 @@ import Footer from '../components/Footer'
 import './MyAppointments.css'
 
 const CHANNEL_INFO = {
-    telegram:    { label: 'Telegram',    icon: '✈️',  color: '#2aabee', bg: 'rgba(42,171,238,0.1)',  border: 'rgba(42,171,238,0.3)' },
-    viber:       { label: 'Viber',       icon: '📳',  color: '#7360f2', bg: 'rgba(115,96,242,0.1)', border: 'rgba(115,96,242,0.3)' },
-    whatsapp:    { label: 'WhatsApp',    icon: '💬',  color: '#25d366', bg: 'rgba(37,211,102,0.1)', border: 'rgba(37,211,102,0.3)' },
-    zoom:        { label: 'Zoom',        icon: '🎥',  color: '#2d8cff', bg: 'rgba(45,140,255,0.1)', border: 'rgba(45,140,255,0.3)' },
-    google_meet: { label: 'Google Meet', icon: '📹',  color: '#00897b', bg: 'rgba(0,137,123,0.1)',  border: 'rgba(0,137,123,0.3)' },
+    telegram: { label: 'Telegram', icon: '✈️', color: '#2aabee', bg: 'rgba(42,171,238,0.1)', border: 'rgba(42,171,238,0.3)' },
+    viber: { label: 'Viber', icon: '📳', color: '#7360f2', bg: 'rgba(115,96,242,0.1)', border: 'rgba(115,96,242,0.3)' },
+    whatsapp: { label: 'WhatsApp', icon: '💬', color: '#25d366', bg: 'rgba(37,211,102,0.1)', border: 'rgba(37,211,102,0.3)' },
+    zoom: { label: 'Zoom', icon: '🎥', color: '#2d8cff', bg: 'rgba(45,140,255,0.1)', border: 'rgba(45,140,255,0.3)' },
+    google_meet: { label: 'Google Meet', icon: '📹', color: '#00897b', bg: 'rgba(0,137,123,0.1)', border: 'rgba(0,137,123,0.3)' },
 }
 
 function ChannelBlock({ channel }) {
@@ -32,20 +32,21 @@ function ChannelBlock({ channel }) {
 }
 
 const STEPS = [
-    { key: 'booking',        label: 'ချိန်းဆိုမှု',          icon: '📅' },
-    { key: 'payment',        label: 'ငွေပေးချေမှု',         icon: '💳' },
-    { key: 'medical_records',label: 'မှတ်တမ်းများတင်',      icon: '📋' },
-    { key: 'consultation',   label: 'တိုင်ပင်ဆွေးနွေးမှု',  icon: '🩺' },
+    { key: 'booking', label: 'ချိန်းဆိုမှု', icon: '📅' },
+    { key: 'payment', label: 'ငွေပေးချေမှု', icon: '💳' },
+    { key: 'medical_records', label: 'မှတ်တမ်းများတင်', icon: '📋' },
+    { key: 'consultation', label: 'တိုင်ပင်ဆွေးနွေးမှု', icon: '🩺' },
 ]
 
 function getStepIndex(status) {
     switch (status) {
-        case 'pending_payment':    return 1
-        case 'payment_submitted':  return 1
-        case 'confirmed':          return 2
-        case 'completed':          return 4
-        case 'rejected':           return -1
-        default:                   return 0
+        case 'pending_payment': return 1
+        case 'payment_submitted': return 1
+        case 'confirmed': return 2
+        case 'records_reviewed': return 3
+        case 'completed': return 4
+        case 'rejected': return -1
+        default: return 0
     }
 }
 
@@ -57,7 +58,7 @@ function ProgressBar({ status }) {
     return (
         <div className="progress-bar-wrapper">
             {STEPS.map((step, i) => {
-                const isDone    = i < activeIndex
+                const isDone = i < activeIndex
                 const isCurrent = i === activeIndex
                 const isPending = i > activeIndex
 
@@ -81,8 +82,8 @@ function ProgressBar({ status }) {
 }
 
 function MyAppointments() {
-    const [searchTerm, setSearchTerm]   = useState('')
-    const [searchType, setSearchType]   = useState('phone')
+    const [searchTerm, setSearchTerm] = useState('')
+    const [searchType, setSearchType] = useState('phone')
     const [appointments, setAppointments] = useState([])
     const [isSearching, setIsSearching] = useState(false)
     const [hasSearched, setHasSearched] = useState(false)
@@ -124,10 +125,10 @@ function MyAppointments() {
 
     const formatTime = (t) => {
         if (!t) return 'N/A'
-        const src  = t.includes('T') ? t : t.replace(' ', 'T')
+        const src = t.includes('T') ? t : t.replace(' ', 'T')
         const date = new Date(src)
-        const h    = date.getHours()
-        const m    = String(date.getMinutes()).padStart(2, '0')
+        const h = date.getHours()
+        const m = String(date.getMinutes()).padStart(2, '0')
         return `${h % 12 || 12}:${m} ${h >= 12 ? 'ညနေ' : 'နံနက်'}`
     }
 
@@ -215,7 +216,7 @@ function MyAppointments() {
 
 function AppointmentCard({ apt, status, formatDate, formatTime }) {
     const isConfirmed = status === 'confirmed'
-    const isRejected  = status === 'rejected'
+    const isRejected = status === 'rejected'
 
     return (
         <div className={`appointment-card glass-card ${isConfirmed ? 'appointment-card--confirmed' : ''} ${isRejected ? 'appointment-card--rejected' : ''}`}>
@@ -342,11 +343,11 @@ function AppointmentCard({ apt, status, formatDate, formatTime }) {
 
 function StatusBadge({ status }) {
     const map = {
-        pending_payment:   { text: 'ငွေပေးချေရန် ကျန်ရှိ',        cls: 'status-pending' },
-        payment_submitted: { text: 'ငွေပေးချေမှု စစ်ဆေးနေ',       cls: 'status-submitted' },
-        confirmed:         { text: 'အတည်ပြုပြီး',                  cls: 'status-confirmed' },
-        rejected:          { text: 'ပယ်ဖျက်ပြီး',                  cls: 'status-rejected' },
-        completed:         { text: 'ပြီးဆုံးပြီး',                 cls: 'status-completed' },
+        pending_payment: { text: 'ငွေပေးချေရန် ကျန်ရှိ', cls: 'status-pending' },
+        payment_submitted: { text: 'ငွေပေးချေမှု စစ်ဆေးနေ', cls: 'status-submitted' },
+        confirmed: { text: 'အတည်ပြုပြီး', cls: 'status-confirmed' },
+        rejected: { text: 'ပယ်ဖျက်ပြီး', cls: 'status-rejected' },
+        completed: { text: 'ပြီးဆုံးပြီး', cls: 'status-completed' },
     }
     const info = map[status] || { text: status || 'N/A', cls: 'status-unknown' }
     return <span className={`status-badge ${info.cls}`}>{info.text}</span>
