@@ -391,135 +391,141 @@ function LandingPage() {
                 <div className="container">
                     <span className="badge">👨‍⚕️ အွန်လိုင်း တိုင်ပင်ပေးခြင်း</span>
                     <h2 className="section-title" style={{ marginTop: '1rem' }}>
-                        တိုင်ပင်ဆွေးနွေးခြင်း
+                        ဆရာဝန်နှင့် တိုင်ပင်ဆွေးနွေးရန် ချိန်းဆိုပါ
                     </h2>
                     <p className="section-subtitle">
-                        အထွေထွေရောဂါကု ဆရာဝန်နဲ့ တိုက်ရိုက် တိုင်ပင်ဆွေးနွေးနိုင်ပါပြီ။ အောက်က calendar ထဲကနေ နေ့ရက်နဲ့ အချိန်ကို ရွေးပြီး booking တင်နိုင်ပါတယ်။
+                        🎬 ဗီဒီယိုခေါ်ဆိုမှု မိနစ် ၃၀ &nbsp;•&nbsp; ၁၀,၀၀၀ ကျပ် &nbsp;•&nbsp; ကြိုက်ရာ channel ရွေးနိုင်သည်
                     </p>
 
-                    <div style={{ maxWidth: '600px', marginLeft: 'auto', marginRight: 'auto', marginTop: '2rem' }}>
-                        <div className="glass-card" style={{ padding: '2rem' }}>
-                            <div className="booking-calendar">
-                                <div className="booking-calendar__header">
+                    <div className="booking-wizard">
+
+                        {/* ── STEP 1 : Date ── */}
+                        <div className={`booking-step glass-card ${selectedDate ? 'booking-step--done' : 'booking-step--active'}`}>
+                            <div className="booking-step__head">
+                                <div className={`booking-step__num ${selectedDate ? 'done' : ''}`}>
+                                    {selectedDate ? '✓' : '1'}
+                                </div>
+                                <div>
+                                    <div className="booking-step__title">နေ့ရက် ရွေးချယ်ပါ</div>
+                                    {selectedDate && (
+                                        <div className="booking-step__selected">
+                                            📅 {new Date(selectedDate).toLocaleDateString('my-MM', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                                        </div>
+                                    )}
+                                </div>
+                                {selectedDate && (
                                     <button
                                         type="button"
-                                        className="booking-calendar__nav"
-                                        onClick={() =>
-                                            setCalendarMonth(
-                                                (prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1)
-                                            )
-                                        }
+                                        className="booking-step__change"
+                                        onClick={() => { setSelectedDate(''); setSelectedTime('') }}
                                     >
-                                        ◀
+                                        ပြောင်းရန်
                                     </button>
-                                    <h3 className="booking-calendar__month">{monthLabel}</h3>
-                                    <button
-                                        type="button"
-                                        className="booking-calendar__nav"
-                                        onClick={() =>
-                                            setCalendarMonth(
-                                                (prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1)
-                                            )
-                                        }
-                                    >
-                                        ▶
-                                    </button>
-                                </div>
+                                )}
+                            </div>
 
-                                <div className="booking-calendar__weekdays">
-                                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((label) => (
-                                        <span key={label}>{label}</span>
-                                    ))}
-                                </div>
-
-                                <div className="booking-calendar__grid">
-                                    {calendarDays.map((item) => (
-                                        <button
-                                            key={item.key}
-                                            type="button"
-                                            disabled={item.disabled}
-                                            className={`booking-calendar__day ${item.empty ? 'booking-calendar__day--empty' : ''
-                                                } ${selectedDate === item.dateStr ? 'booking-calendar__day--selected' : ''}`}
-                                            onClick={() => {
-                                                if (!item.empty && !item.disabled) setSelectedDate(item.dateStr)
-                                            }}
-                                        >
-                                            {item.day}
+                            {!selectedDate && (
+                                <div className="booking-calendar">
+                                    <div className="booking-calendar__header">
+                                        <button type="button" className="booking-calendar__nav"
+                                            onClick={() => setCalendarMonth(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))}>
+                                            ◀
                                         </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            <div className="booking-calendar__times">
-                                <h4>ရွေးထားသောနေ့: {selectedDateLabel}</h4>
-                                <div className="booking-calendar__time-grid">
-                                    {availableTimes.map((time) => (
-                                        <button
-                                            key={time}
-                                            type="button"
-                                            className={`booking-calendar__time ${selectedTime === time ? 'booking-calendar__time--selected' : ''}`}
-                                            onClick={() => setSelectedTime(time)}
-                                        >
-                                            {time}
+                                        <h3 className="booking-calendar__month">{monthLabel}</h3>
+                                        <button type="button" className="booking-calendar__nav"
+                                            onClick={() => setCalendarMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))}>
+                                            ▶
                                         </button>
-                                    ))}
+                                    </div>
+                                    <div className="booking-calendar__weekdays">
+                                        {['တနင်္ဂနွေ','တနင်္လာ','အင်္ဂါ','ဗုဒ္ဓဟူး','ကြာသပတေး','သောကြာ','စနေ'].map(d => (
+                                            <span key={d}>{d.slice(0, 2)}</span>
+                                        ))}
+                                    </div>
+                                    <div className="booking-calendar__grid">
+                                        {calendarDays.map(item => (
+                                            <button
+                                                key={item.key}
+                                                type="button"
+                                                disabled={item.disabled}
+                                                className={`booking-calendar__day ${item.empty ? 'booking-calendar__day--empty' : ''} ${selectedDate === item.dateStr ? 'booking-calendar__day--selected' : ''}`}
+                                                onClick={() => { if (!item.empty && !item.disabled) setSelectedDate(item.dateStr) }}
+                                            >
+                                                {item.day}
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
-
-                            <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-                                <h4 style={{ marginBottom: '1rem', textAlign: 'center' }}>
-                                    အချိန်ရွေးပြီးရင် booking form ဖြင့် တင်ပို့ပါ
-                                </h4>
-                                <BookingForm initialDate={selectedDate} initialTime={selectedTime} />
-                            </div>
-
-                            <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-                                <h4 style={{ marginBottom: '1rem', textAlign: 'center' }}>သို့မဟုတ် နှစ်သက်ရာ လမ်းကြောင်းဖြင့် တိုက်ရိုက် ဆက်သွယ်ပါ</h4>
-
-                                <div className="channel-options">
-                                    <button
-                                        onClick={() => window.open('https://t.me/drtunhealthconsultant', '_blank')}
-                                        className="channel-option"
-                                        style={{ cursor: 'pointer' }}
-                                    >
-                                        <span className="channel-icon">✈️</span>
-                                        <span className="channel-name">Telegram</span>
-                                    </button>
-                                    <button
-                                        onClick={() => window.open('viber://chat?number=959421068582', '_blank')}
-                                        className="channel-option"
-                                        style={{ cursor: 'pointer' }}
-                                    >
-                                        <span className="channel-icon">💜</span>
-                                        <span className="channel-name">Viber</span>
-                                    </button>
-                                    <button
-                                        onClick={() => window.open('https://wa.me/959421068582', '_blank')}
-                                        className="channel-option"
-                                        style={{ cursor: 'pointer' }}
-                                    >
-                                        <span className="channel-icon">💚</span>
-                                        <span className="channel-name">WhatsApp</span>
-                                    </button>
-                                    <button
-                                        onClick={() => window.open('https://zoom.us/j/8731320275', '_blank')}
-                                        className="channel-option"
-                                        style={{ cursor: 'pointer' }}
-                                    >
-                                        <span className="channel-icon">📹</span>
-                                        <span className="channel-name">Zoom</span>
-                                    </button>
-                                    <button
-                                        onClick={() => window.open('https://meet.google.com/wgd-bubr-tgo', '_blank')}
-                                        className="channel-option"
-                                        style={{ cursor: 'pointer' }}
-                                    >
-                                        <span className="channel-icon">📹</span>
-                                        <span className="channel-name">Google Meet</span>
-                                    </button>
-                                </div>
-                            </div>
+                            )}
                         </div>
+
+                        {/* ── STEP 2 : Time ── */}
+                        <div className={`booking-step glass-card ${!selectedDate ? 'booking-step--locked' : selectedTime ? 'booking-step--done' : 'booking-step--active'}`}>
+                            <div className="booking-step__head">
+                                <div className={`booking-step__num ${selectedTime ? 'done' : ''}`}>
+                                    {selectedTime ? '✓' : '2'}
+                                </div>
+                                <div>
+                                    <div className="booking-step__title">အချိန် ရွေးချယ်ပါ</div>
+                                    {selectedTime && (
+                                        <div className="booking-step__selected">
+                                            ⏰ {(() => {
+                                                const h = parseInt(selectedTime.split(':')[0])
+                                                const m = selectedTime.split(':')[1]
+                                                return `${h % 12 || 12}:${m} ${h >= 12 ? 'ညနေ' : 'နံနက်'}`
+                                            })()}
+                                        </div>
+                                    )}
+                                </div>
+                                {selectedTime && selectedDate && (
+                                    <button type="button" className="booking-step__change" onClick={() => setSelectedTime('')}>
+                                        ပြောင်းရန်
+                                    </button>
+                                )}
+                            </div>
+
+                            {selectedDate && !selectedTime && (
+                                <div className="booking-calendar__times">
+                                    <p className="time-grid-hint">ဆရာဝန်နှင့် ဆေးဝါးပညာဆွေးနွေးနိုင်သော အချိန်ကို ရွေးပါ</p>
+                                    <div className="booking-calendar__time-grid">
+                                        {availableTimes.map(time => (
+                                            <button
+                                                key={time}
+                                                type="button"
+                                                className={`booking-calendar__time ${selectedTime === time ? 'booking-calendar__time--selected' : ''}`}
+                                                onClick={() => setSelectedTime(time)}
+                                            >
+                                                {time}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {!selectedDate && (
+                                <p className="booking-step__lock-msg">ဦးစွာ နေ့ရက်ကို ရွေးပေးပါ</p>
+                            )}
+                        </div>
+
+                        {/* ── STEP 3 : Details & Book ── */}
+                        <div className={`booking-step glass-card ${!selectedTime ? 'booking-step--locked' : 'booking-step--active'}`}>
+                            <div className="booking-step__head">
+                                <div className="booking-step__num">3</div>
+                                <div>
+                                    <div className="booking-step__title">အချက်အလက်ဖြည့်ပြီး တင်ပို့ပါ</div>
+                                    <div className="booking-step__sub">နာမည်၊ ဖုန်း၊ channel ရွေးချယ်ပြီး booking တင်ပါ</div>
+                                </div>
+                            </div>
+
+                            {selectedTime ? (
+                                <div className="booking-step__form">
+                                    <BookingForm initialDate={selectedDate} initialTime={selectedTime} />
+                                </div>
+                            ) : (
+                                <p className="booking-step__lock-msg">နေ့ရက်နှင့် အချိန် ရွေးပြီးမှ ဖြည့်နိုင်ပါမည်</p>
+                            )}
+                        </div>
+
                     </div>
                 </div>
             </section>
