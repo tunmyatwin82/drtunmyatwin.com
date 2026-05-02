@@ -8,6 +8,20 @@ const PAGE_SIZE = 10
 // Validate key contains only ASCII characters (safe for HTTP headers)
 const isValidHeaderValue = (str) => /^[\x20-\x7E]*$/.test(str)
 
+const STATUS_LABELS = {
+    pending_payment: { text: 'ငွေပေးချေရန်ကျန်', cls: 'status-pending' },
+    payment_submitted: { text: 'ငွေပေးချေမှု စစ်ဆေးဆဲ', cls: 'status-submitted' },
+    confirmed: { text: 'အတည်ပြုပြီး', cls: 'status-confirmed' },
+    records_reviewed: { text: 'မှတ်တမ်း စစ်ဆေးပြီး', cls: 'status-reviewed' },
+    rejected: { text: 'ပယ်ဖျက်ပြီး', cls: 'status-rejected' },
+    completed: { text: 'ပြီးဆုံးပြီး', cls: 'status-completed' },
+}
+
+function StatusBadge({ status }) {
+    const info = STATUS_LABELS[status] || { text: status || 'N/A', cls: 'status-unknown' }
+    return <span className={`admin-status-badge ${info.cls}`}>{info.text}</span>
+}
+
 function AdminBookings() {
     const resolveStatus = (row) => {
         if (row.BookingStatus) return row.BookingStatus
@@ -198,7 +212,7 @@ function AdminBookings() {
                                                         <td>{row.Phone || '-'}</td>
                                                         <td>{row.PreferredDate || '-'}</td>
                                                         <td>{row.PreferredTime || '-'}</td>
-                                                        <td>{resolveStatus(row)}</td>
+                                                        <td><StatusBadge status={resolveStatus(row)} /></td>
                                                         <td className="actions">
                                                             <button className="btn btn-primary btn-sm" onClick={() => updateStatus(row.Id || row.id, 'confirmed')}>Confirm</button>
                                                             <button className="btn btn-secondary btn-sm" onClick={() => updateStatus(row.Id || row.id, 'records_reviewed')}>Records Reviewed</button>
