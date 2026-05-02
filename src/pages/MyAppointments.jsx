@@ -4,6 +4,33 @@ import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import './MyAppointments.css'
 
+const CHANNEL_INFO = {
+    telegram:    { label: 'Telegram',    icon: '✈️',  color: '#2aabee', bg: 'rgba(42,171,238,0.1)',  border: 'rgba(42,171,238,0.3)' },
+    viber:       { label: 'Viber',       icon: '📳',  color: '#7360f2', bg: 'rgba(115,96,242,0.1)', border: 'rgba(115,96,242,0.3)' },
+    whatsapp:    { label: 'WhatsApp',    icon: '💬',  color: '#25d366', bg: 'rgba(37,211,102,0.1)', border: 'rgba(37,211,102,0.3)' },
+    zoom:        { label: 'Zoom',        icon: '🎥',  color: '#2d8cff', bg: 'rgba(45,140,255,0.1)', border: 'rgba(45,140,255,0.3)' },
+    google_meet: { label: 'Google Meet', icon: '📹',  color: '#00897b', bg: 'rgba(0,137,123,0.1)',  border: 'rgba(0,137,123,0.3)' },
+}
+
+function ChannelBlock({ channel }) {
+    const info = CHANNEL_INFO[channel] || { label: channel, icon: '📱', color: '#94a3b8', bg: 'rgba(148,163,184,0.1)', border: 'rgba(148,163,184,0.3)' }
+    return (
+        <div className="channel-block" style={{ '--ch-color': info.color, '--ch-bg': info.bg, '--ch-border': info.border }}>
+            <div className="channel-block__left">
+                <div className="channel-block__icon">{info.icon}</div>
+                <div>
+                    <div className="channel-block__name">{info.label} မှ တိုင်ပင်ဆွေးနွေးမှု</div>
+                    <div className="channel-block__sub">ဆရာဝန်က <strong>{info.label}</strong> မှတဆင့် သတ်မှတ်ချိန်တွင် ဆက်သွယ်ပါမည်</div>
+                </div>
+            </div>
+            <div className="channel-block__right">
+                <span className="channel-block__tag">🎬 ဗီဒီယိုခေါ်ဆိုမှု</span>
+                <span className="channel-block__tag">⏱ မိနစ် ၃၀</span>
+            </div>
+        </div>
+    )
+}
+
 const STEPS = [
     { key: 'booking',        label: 'ချိန်းဆိုမှု',          icon: '📅' },
     { key: 'payment',        label: 'ငွေပေးချေမှု',         icon: '💳' },
@@ -251,6 +278,13 @@ function AppointmentCard({ apt, status, formatDate, formatTime }) {
                     <span className="detail-value">၁၀,၀၀၀ ကျပ်</span>
                 </div>
             </div>
+
+            {/* ── CHANNEL BLOCK (confirmed only) ── */}
+            {isConfirmed && apt.PreferredChannel && (
+                <div style={{ padding: '0 1.75rem' }}>
+                    <ChannelBlock channel={apt.PreferredChannel} />
+                </div>
+            )}
 
             {/* ── NEXT STEP BLOCK (confirmed only) ── */}
             {isConfirmed && (

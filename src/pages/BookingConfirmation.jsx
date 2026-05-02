@@ -4,6 +4,33 @@ import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import './BookingConfirmation.css'
 
+const CHANNEL_INFO = {
+    telegram:     { label: 'Telegram',      icon: '✈️',  color: '#2aabee', bg: 'rgba(42,171,238,0.1)',  border: 'rgba(42,171,238,0.3)' },
+    viber:        { label: 'Viber',         icon: '📳',  color: '#7360f2', bg: 'rgba(115,96,242,0.1)', border: 'rgba(115,96,242,0.3)' },
+    whatsapp:     { label: 'WhatsApp',      icon: '💬',  color: '#25d366', bg: 'rgba(37,211,102,0.1)', border: 'rgba(37,211,102,0.3)' },
+    zoom:         { label: 'Zoom',          icon: '🎥',  color: '#2d8cff', bg: 'rgba(45,140,255,0.1)', border: 'rgba(45,140,255,0.3)' },
+    google_meet:  { label: 'Google Meet',   icon: '📹',  color: '#00897b', bg: 'rgba(0,137,123,0.1)',  border: 'rgba(0,137,123,0.3)' },
+}
+
+function ChannelBlock({ channel }) {
+    const info = CHANNEL_INFO[channel] || { label: channel, icon: '📱', color: '#94a3b8', bg: 'rgba(148,163,184,0.1)', border: 'rgba(148,163,184,0.3)' }
+    return (
+        <div className="channel-block" style={{ '--ch-color': info.color, '--ch-bg': info.bg, '--ch-border': info.border }}>
+            <div className="channel-block__left">
+                <div className="channel-block__icon">{info.icon}</div>
+                <div>
+                    <div className="channel-block__name">{info.label} မှ တိုင်ပင်ဆွေးနွေးမှု</div>
+                    <div className="channel-block__sub">ဆရာဝန်က <strong>{info.label}</strong> မှတဆင့် သတ်မှတ်ချိန်တွင် ဆက်သွယ်ပါမည်</div>
+                </div>
+            </div>
+            <div className="channel-block__right">
+                <span className="channel-block__tag">🎬 ဗီဒီယိုခေါ်ဆိုမှု</span>
+                <span className="channel-block__tag">⏱ မိနစ် ၃၀</span>
+            </div>
+        </div>
+    )
+}
+
 function BookingConfirmation() {
     const [searchParams] = useSearchParams()
     const name = searchParams.get('name') || ''
@@ -12,6 +39,7 @@ function BookingConfirmation() {
     const section = searchParams.get('section') || ''
     const id = searchParams.get('id') || ''
     const [status, setStatus] = useState('pending')
+    const [channel, setChannel] = useState('')
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
@@ -27,8 +55,6 @@ function BookingConfirmation() {
             }
 
             const data = await response.json()
-            // Admin writes status into ConsultationType as "status:<value>" — check that first.
-            // Only fall back to BookingStatus / PaymentStatus if ConsultationType has no status prefix.
             const consultationStatus =
                 typeof data.ConsultationType === 'string' && data.ConsultationType.startsWith('status:')
                     ? data.ConsultationType.replace('status:', '')
@@ -39,9 +65,9 @@ function BookingConfirmation() {
                 data.PaymentStatus ||
                 (data.PaymentScreenshot ? 'payment_submitted' : 'pending_payment')
             setStatus(resolvedStatus)
+            if (data.PreferredChannel) setChannel(data.PreferredChannel)
         } catch (error) {
             console.error('Fetch error:', error)
-            // Keep default status
         } finally {
             setLoading(false)
         }
@@ -159,6 +185,7 @@ function BookingConfirmation() {
                                                 </div>
                                             </div>
                                         </div>
+                                        {channel && <ChannelBlock channel={channel} />}
                                     </>
                                 )}
 
