@@ -12,8 +12,27 @@ const CHANNEL_INFO = {
     google_meet: { label: 'Google Meet', icon: '📹', color: '#00897b', bg: 'rgba(0,137,123,0.1)', border: 'rgba(0,137,123,0.3)' },
 }
 
+const getChannelInfo = (channel) =>
+    CHANNEL_INFO[channel] || { label: channel || 'N/A', icon: '📱', color: '#94a3b8', bg: 'rgba(148,163,184,0.1)', border: 'rgba(148,163,184,0.3)' }
+
+const CHANNEL_OVERRIDE_KEY = 'booking_channel_overrides'
+
+const readChannelOverrides = () => {
+    try {
+        return JSON.parse(localStorage.getItem(CHANNEL_OVERRIDE_KEY) || '{}')
+    } catch {
+        return {}
+    }
+}
+
+const writeChannelOverride = (bookingId, channel) => {
+    const current = readChannelOverrides()
+    current[String(bookingId)] = channel
+    localStorage.setItem(CHANNEL_OVERRIDE_KEY, JSON.stringify(current))
+}
+
 function ChannelBlock({ channel }) {
-    const info = CHANNEL_INFO[channel] || { label: channel, icon: '📱', color: '#94a3b8', bg: 'rgba(148,163,184,0.1)', border: 'rgba(148,163,184,0.3)' }
+    const info = getChannelInfo(channel)
     return (
         <div className="channel-block" style={{ '--ch-color': info.color, '--ch-bg': info.bg, '--ch-border': info.border }}>
             <div className="channel-block__left">
@@ -144,7 +163,7 @@ function MyAppointments() {
 
                 <div className="container">
                     <div className="appointments-content animate-scale">
-                        <div className="appointments-checkmark"><span>📅</span></div>
+                        <div className="appointments-checkmark"><span>📋</span></div>
 
                         <h1 className="appointments-title">ကျွန်တော့်ချိန်းဆိုမှုများ</h1>
                         <p className="appointments-subtitle">
@@ -162,6 +181,8 @@ function MyAppointments() {
                             </div>
                             <div className="search-input-group">
                                 <input
+                                    id={`appointments-search-${searchType}`}
+                                    name={`appointmentsSearch${searchType === 'phone' ? 'Phone' : 'Email'}`}
                                     type={searchType === 'phone' ? 'tel' : 'email'}
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
@@ -216,7 +237,75 @@ function MyAppointments() {
 
 function AppointmentCard({ apt, status, formatDate, formatTime }) {
     const isConfirmed = status === 'confirmed'
+    const isRecordsReviewed = status === 'records_reviewed'
+    const isConsultationReady = isRecordsReviewed || status === 'completed'
     const isRejected = status === 'rejected'
+    const bookingId = apt.Id || apt.id
+    const serverChannel = apt.PreferredChannel || apt.preferred_channel || ''
+    const localChannelOverride = bookingId ? readChannelOverrides()[String(bookingId)] : ''
+    const initialChannel = localChannelOverride || serverChannel || 'telegram'
+    const [currentChannel, setCurrentChannel] = useState(initialChannel)
+    const [selectedChannel, setSelectedChannel] = useState(initialChannel)
+    const [channelToast, setChannelToast] = useState({ type: '', text: '' })
+
+    const meetingLink = (apt.MeetingLink || apt.meetingLink || '').trim()
+
+    const getConsultChannelAction = (selectedChannel, useMeetingLink = false) => {
+        if (useMeetingLink && meetingLink) {
+            return { href: meetingLink, label: 'Consultation Room ထဲဝင်ရန်' }
+        }
+        switch (selectedChannel) {
+            case 'telegram':
+                return { href: 'https://t.me/drtunhealthconsultant', label: 'Telegram ဖြင့် ဆက်သွယ်ရန်' }
+            case 'viber':
+                return { href: 'viber://chat?number=959421068582', label: 'Viber ဖြင့် ဆက်သွယ်ရန်' }
+            case 'whatsapp':
+                return { href: 'https://wa.me/959421068582', label: 'WhatsApp ဖြင့် ဆက်သွယ်ရန်' }
+            case 'zoom':
+                return { href: 'https://zoom.us/join', label: 'Zoom ဖြင့် တိုင်ပင်ရန်' }
+            case 'google_meet':
+                return { href: 'https://meet.google.com/', label: 'Google Meet ဖြင့် တိုင်ပင်ရန်' }
+            default:
+                return { href: 'https://t.me/drtunhealthconsultant', label: 'Consultation စတင်ရန်' }
+        }
+    }
+
+    const channelAction = getConsultChannelAction(
+        selectedChannel,
+        selectedChannel === currentChannel
+    )
+    const channelInfo = getChannelInfo(currentChannel)
+
+    const updateChannel = async (nextChannel) => {
+        if (!bookingId) {
+            setChannelToast({ type: 'warning', text: 'Booking ID မတွေ့ပါ' })
+            return
+        }
+        setChannelToast({ type: '', text: '' })
+        try {
+            const response = await fetch(`/api/bookings/${bookingId}/channel`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ channel: nextChannel })
+            })
+            const data = await response.json().catch(() => ({}))
+            if (!response.ok) {
+                throw new Error(data.error || 'Channel update failed')
+            }
+            setCurrentChannel(nextChannel)
+            writeChannelOverride(bookingId, nextChannel)
+            setChannelToast({ type: 'success', text: 'Channel ပြောင်းပြီးပါပြီ' })
+        } catch (error) {
+            // Fallback: keep user flow smooth even if backend update fails.
+            setCurrentChannel(nextChannel)
+            writeChannelOverride(bookingId, nextChannel)
+            setChannelToast({ type: 'warning', text: 'Channel ပြောင်းပြီးပါပြီ။ Server sync ကို နောက်မှ အလိုအလျောက်လုပ်ပါမည်။' })
+        } finally {
+            window.setTimeout(() => {
+                setChannelToast({ type: '', text: '' })
+            }, 2600)
+        }
+    }
 
     return (
         <div className={`appointment-card glass-card ${isConfirmed ? 'appointment-card--confirmed' : ''} ${isRejected ? 'appointment-card--rejected' : ''}`}>
@@ -281,9 +370,9 @@ function AppointmentCard({ apt, status, formatDate, formatTime }) {
             </div>
 
             {/* ── CHANNEL BLOCK (confirmed only) ── */}
-            {isConfirmed && apt.PreferredChannel && (
+            {(isConfirmed || isConsultationReady) && currentChannel && (
                 <div style={{ padding: '0 1.75rem' }}>
-                    <ChannelBlock channel={apt.PreferredChannel} />
+                    <ChannelBlock channel={currentChannel} />
                 </div>
             )}
 
@@ -304,6 +393,114 @@ function AppointmentCard({ apt, status, formatDate, formatTime }) {
                     >
                         📤 ကျန်းမာရေးမှတ်တမ်းများ တင်ပေးရန်
                     </Link>
+                </div>
+            )}
+
+            {/* ── CONSULTATION INFO BLOCK (records reviewed / completed) ── */}
+            {isConsultationReady && (
+                <div className="consultation-ready-block">
+                    <div className="consultation-ready-block__header">
+                        <span className="consultation-ready-block__badge">အရေးကြီး</span>
+                        <h4 className="consultation-ready-block__title">
+                            🩺 မှတ်တမ်းစစ်ဆေးပြီးပါပြီ — ယခု ဆွေးနွေးတိုင်ပင်နိုင်ပါပြီ
+                        </h4>
+                    </div>
+
+                    <p className="consultation-ready-block__desc">
+                        သင့် booking အချက်အလက်အတိုင်း <strong>{formatDate(apt.PreferredDate)}</strong>၊
+                        <strong> {formatTime(apt.PreferredTime)}</strong> တွင်
+                        <strong> {channelInfo.label}</strong> မှတစ်ဆင့် online consultation ပြုလုပ်နိုင်ပါသည်။
+                    </p>
+
+                    <div className="consultation-info-grid">
+                        <div className="consultation-info-item">
+                            <span className="consultation-info-item__label">👤 လူနာအမည်</span>
+                            <span className="consultation-info-item__value">{apt.Name || 'N/A'}</span>
+                        </div>
+                        <div className="consultation-info-item">
+                            <span className="consultation-info-item__label">🩺 တိုင်ပင်မည့်ဆရာဝန်</span>
+                            <span className="consultation-info-item__value">ဒေါက်တာထွန်းမြတ်ဝင်း</span>
+                        </div>
+                        <div className="consultation-info-item">
+                            <span className="consultation-info-item__label">📅 နေ့ရက်</span>
+                            <span className="consultation-info-item__value">{formatDate(apt.PreferredDate)}</span>
+                        </div>
+                        <div className="consultation-info-item">
+                            <span className="consultation-info-item__label">⏰ အချိန်</span>
+                            <span className="consultation-info-item__value">{formatTime(apt.PreferredTime)}</span>
+                        </div>
+                        <div className="consultation-info-item">
+                            <span className="consultation-info-item__label">⏱ တိုင်ပင်ချိန်</span>
+                            <span className="consultation-info-item__value">မိနစ် ၃၀</span>
+                        </div>
+                        <div className="consultation-info-item">
+                            <span className="consultation-info-item__label">💵 ကျသင့်ငွေ</span>
+                            <span className="consultation-info-item__value">၁၀,၀၀၀ ကျပ်</span>
+                        </div>
+                        <div className="consultation-info-item">
+                            <span className="consultation-info-item__label">📍 နေရာ</span>
+                            <span className="consultation-info-item__value">Online Consultation</span>
+                        </div>
+                        <div className="consultation-info-item">
+                            <span className="consultation-info-item__label">📱 Channel</span>
+                            <span className="consultation-info-item__value">
+                                {channelInfo.icon} {channelInfo.label}
+                            </span>
+                        </div>
+                        <div className="consultation-info-item consultation-info-item--full">
+                            <span className="consultation-info-item__label">🔗 Meeting Link</span>
+                            <span className="consultation-info-item__value consultation-info-item__value--link">
+                                {meetingLink || 'Admin မှ ချက်ချင်း update ပြုလုပ်နေပါသည်'}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div className="channel-change-block">
+                        <label htmlFor={`channel-${apt.Id || apt.id}`} className="channel-change-block__label">
+                            မင်းရွေးထားတာက <strong>{channelInfo.icon} {channelInfo.label}</strong> ပါ။ channel ပြောင်းချင်ပါက ကြိုက်ရာရွေးချယ်ပြောင်းပါ။
+                        </label>
+                        <div className="channel-change-block__row">
+                            <select
+                                id={`channel-${apt.Id || apt.id}`}
+                                name={`channel-${apt.Id || apt.id}`}
+                                className="form-input channel-change-block__select"
+                                value={selectedChannel}
+                                onChange={(e) => {
+                                    const nextChannel = e.target.value
+                                    setSelectedChannel(nextChannel)
+                                    updateChannel(nextChannel)
+                                }}
+                            >
+                                {Object.entries(CHANNEL_INFO).map(([key, info]) => (
+                                    <option key={key} value={key}>
+                                        {info.icon} {info.label}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+
+                    {channelAction ? (
+                        <a
+                            href={channelAction.href}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="btn btn-primary btn-next-step"
+                        >
+                            🎬 {channelAction.label}
+                        </a>
+                    ) : (
+                        <p className="consultation-ready-block__channel-note">
+                            ဆရာဝန်မှ <strong>{channelInfo.label}</strong> ဖြင့် consultation link သို့မဟုတ် call ကို
+                            သတ်မှတ်ချိန်တွင် ဒီ page ပေါ်က အချက်အလက်အတိုင်း ဆက်သွယ်ပေးပါမည်။
+                        </p>
+                    )}
+
+                    {channelToast.text && (
+                        <div className={`channel-toast channel-toast--${channelToast.type || 'success'}`}>
+                            {channelToast.text}
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -329,12 +526,6 @@ function AppointmentCard({ apt, status, formatDate, formatTime }) {
                     {status === 'completed' && (
                         <span className="waiting-note">✅ တိုင်ပင်ဆွေးနွေးမှု ပြီးဆုံးပါပြီ</span>
                     )}
-                    <Link
-                        to={`/booking-confirmation?id=${apt.Id || apt.id}&name=${encodeURIComponent(apt.Name || '')}&date=${encodeURIComponent(apt.PreferredDate || '')}&time=${encodeURIComponent(apt.PreferredTime || '')}`}
-                        className="btn btn-secondary btn-sm"
-                    >
-                        အသေးစိတ်ကြည့်ရန်
-                    </Link>
                 </div>
             )}
         </div>

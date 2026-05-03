@@ -23,6 +23,15 @@ function StatusBadge({ status }) {
 }
 
 function AdminBookings() {
+    const parseApiResponse = async (response) => {
+        const text = await response.text()
+        try {
+            return text ? JSON.parse(text) : {}
+        } catch {
+            return { error: `Server returned non-JSON response (${response.status}). Please restart backend server.` }
+        }
+    }
+
     const resolveStatus = (row) => {
         if (row.BookingStatus) return row.BookingStatus
         if (row.PaymentStatus) return row.PaymentStatus
@@ -50,6 +59,7 @@ function AdminBookings() {
     const [q, setQ] = useState('')
     const [status, setStatus] = useState('')
     const [date, setDate] = useState('')
+    const [meetingLinks, setMeetingLinks] = useState({})
 
     const fetchRows = async () => {
         if (!adminKey) return
@@ -88,7 +98,18 @@ function AdminBookings() {
                 throw new Error(data.error || 'Failed to load bookings')
             }
             console.log('[Admin] Loaded', data.rows?.length, 'rows out of', data.total, 'total')
-            setRows(data.rows || [])
+            const nextRows = data.rows || []
+            setRows(nextRows)
+            setMeetingLinks((prev) => {
+                const next = { ...prev }
+                nextRows.forEach((row) => {
+                    const id = String(row.Id || row.id)
+                    if (!(id in next)) {
+                        next[id] = row.MeetingLink || ''
+                    }
+                })
+                return next
+            })
             setTotal(data.total || 0)
         } catch (err) {
             console.error('[Admin] Error:', err)
@@ -127,16 +148,35 @@ function AdminBookings() {
 
     const updateStatus = async (id, nextStatus) => {
         try {
+            const meetingLink = (meetingLinks[String(id)] || '').trim()
             const response = await fetch(`/api/admin/bookings/${id}/status`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
                     'x-admin-key': adminKey
                 },
-                body: JSON.stringify({ status: nextStatus })
+                body: JSON.stringify({ status: nextStatus, meetingLink })
             })
-            const data = await response.json()
+            const data = await parseApiResponse(response)
             if (!response.ok) throw new Error(data.error || 'Update failed')
+            fetchRows()
+        } catch (err) {
+            alert(err.message)
+        }
+    }
+
+    const saveMeetingLink = async (id) => {
+        try {
+            const response = await fetch(`/api/admin/bookings/${id}/meeting-link`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-admin-key': adminKey
+                },
+                body: JSON.stringify({ meetingLink: (meetingLinks[String(id)] || '').trim() })
+            })
+            const data = await parseApiResponse(response)
+            if (!response.ok) throw new Error(data.error || 'Failed to save meeting link')
             fetchRows()
         } catch (err) {
             alert(err.message)
@@ -199,8 +239,10 @@ function AdminBookings() {
                                                 <tr>
                                                     <th>Name</th>
                                                     <th>Phone</th>
+                                                    <th>Channel</th>
                                                     <th>Date</th>
                                                     <th>Time</th>
+                                                    <th>Meeting Link</th>
                                                     <th>Status</th>
                                                     <th>Actions</th>
                                                 </tr>
@@ -210,8 +252,29 @@ function AdminBookings() {
                                                     <tr key={row.Id || row.id}>
                                                         <td>{row.Name || '-'}</td>
                                                         <td>{row.Phone || '-'}</td>
+                                                        <td>{row.PreferredChannel || '-'}</td>
                                                         <td>{row.PreferredDate || '-'}</td>
                                                         <td>{row.PreferredTime || '-'}</td>
+                                                        <td>
+                                                            <div className="meeting-link-cell">
+                                                                <input
+                                                                    type="url"
+                                                                    className="form-input"
+                                                                    placeholder="https://meet.google.com/... or https://zoom.us/j/..."
+                                                                    value={meetingLinks[String(row.Id || row.id)] || ''}
+                                                                    onChange={(e) => setMeetingLinks((prev) => ({
+                                                                        ...prev,
+                                                                        [String(row.Id || row.id)]: e.target.value
+                                                                    }))}
+                                                                />
+                                                                <button
+                                                                    className="btn btn-secondary btn-sm"
+                                                                    onClick={() => saveMeetingLink(row.Id || row.id)}
+                                                                >
+                                                                    Save Link
+                                                                </button>
+                                                            </div>
+                                                        </td>
                                                         <td><StatusBadge status={resolveStatus(row)} /></td>
                                                         <td className="actions">
                                                             <button className="btn btn-primary btn-sm" onClick={() => updateStatus(row.Id || row.id, 'confirmed')}>Confirm</button>

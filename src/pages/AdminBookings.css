@@ -40,6 +40,15 @@
 .actions {
     display: flex;
     gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.meeting-link-cell {
+    min-width: 300px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.5rem;
+    align-items: center;
 }
 
 .admin-pagination {

@@ -196,6 +196,47 @@ app.patch('/api/bookings/:id/payment-upload', upload.single('screenshot'), async
     }
 })
 
+app.patch('/api/bookings/:id/channel', async (req, res) => {
+    try {
+        const channel = String(req.body?.channel || '').trim()
+        const allowedChannels = ['telegram', 'viber', 'whatsapp', 'zoom', 'google_meet']
+        if (!allowedChannels.includes(channel)) {
+            return res.status(400).json({ error: 'Invalid channel value' })
+        }
+
+        const recordId = Number(req.params.id)
+        if (!Number.isFinite(recordId)) {
+            return res.status(400).json({ error: 'Invalid booking id' })
+        }
+
+        const updated = await nocodbRequest(`/api/v2/tables/${NOCODB_BOOKING_TABLE_ID}/records`, {
+            method: 'PATCH',
+            body: JSON.stringify({
+                Id: recordId,
+                PreferredChannel: channel
+            })
+        })
+
+        // Optional best-effort reset for existing per-booking meeting link.
+        // Some NocoDB tables may not yet have MeetingLink column, so do not fail the channel update.
+        try {
+            await nocodbRequest(`/api/v2/tables/${NOCODB_BOOKING_TABLE_ID}/records`, {
+                method: 'PATCH',
+                body: JSON.stringify({
+                    Id: recordId,
+                    MeetingLink: ''
+                })
+            })
+        } catch {
+            // Ignore secondary reset error to keep patient-facing channel updates reliable.
+        }
+
+        res.json(updated)
+    } catch (error) {
+        res.status(500).json({ error: error.message })
+    }
+})
+
 app.patch('/api/bookings/:id/medical-records', upload.array('files', 10), async (req, res) => {
     try {
         if (!req.files || req.files.length === 0) {
@@ -272,7 +313,7 @@ app.get('/api/admin/bookings', requireAdmin, async (req, res) => {
 
 app.patch('/api/admin/bookings/:id/status', requireAdmin, async (req, res) => {
     try {
-        const { status } = req.body
+        const { status, meetingLink } = req.body
         const allowed = ['pending_payment', 'payment_submitted', 'confirmed', 'rejected', 'completed', 'records_reviewed']
         if (!allowed.includes(status)) {
             return res.status(400).json({ error: 'Invalid status value' })
@@ -280,11 +321,32 @@ app.patch('/api/admin/bookings/:id/status', requireAdmin, async (req, res) => {
 
         // PaymentStatus is currently a SingleSelect without options in NocoDB.
         // Persist admin decision in ConsultationType text column as fallback.
+        const payload = {
+            Id: Number(req.params.id),
+            ConsultationType: `status:${status}`
+        }
+        if (typeof meetingLink === 'string') {
+            payload.MeetingLink = meetingLink.trim()
+        }
+
+        const updated = await nocodbRequest(`/api/v2/tables/${NOCODB_BOOKING_TABLE_ID}/records`, {
+            method: 'PATCH',
+            body: JSON.stringify(payload)
+        })
+        res.json(updated)
+    } catch (error) {
+        res.status(500).json({ error: error.message })
+    }
+})
+
+app.patch('/api/admin/bookings/:id/meeting-link', requireAdmin, async (req, res) => {
+    try {
+        const meetingLink = String(req.body?.meetingLink || '').trim()
         const updated = await nocodbRequest(`/api/v2/tables/${NOCODB_BOOKING_TABLE_ID}/records`, {
             method: 'PATCH',
             body: JSON.stringify({
                 Id: Number(req.params.id),
-                ConsultationType: `status:${status}`
+                MeetingLink: meetingLink
             })
         })
         res.json(updated)
@@ -311,7 +373,8 @@ app.patch('/api/admin/bookings/:id/records-reviewed', requireAdmin, async (req, 
 const distPath = join(__dirname, '..', 'dist')
 if (existsSync(distPath)) {
     app.use(express.static(distPath))
-    app.get('*', (_req, res) => {
+    // Express 5 no longer accepts string "*" path patterns.
+    app.get(/.*/, (_req, res) => {
         res.sendFile(join(distPath, 'index.html'))
     })
 }
