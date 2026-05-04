@@ -9,7 +9,6 @@ const CHANNEL_INFO = {
     viber:       { label: 'Viber',       icon: '📳',  color: '#7360f2' },
     whatsapp:    { label: 'WhatsApp',    icon: '💬',  color: '#25d366' },
     zoom:        { label: 'Zoom',        icon: '🎥',  color: '#2d8cff' },
-    google_meet: { label: 'Google Meet', icon: '📹',  color: '#00897b' },
 }
 
 function PaymentInstructions() {

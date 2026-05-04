@@ -9,7 +9,6 @@ const CHANNEL_INFO = {
     viber: { label: 'Viber', icon: '📳', color: '#7360f2', bg: 'rgba(115,96,242,0.1)', border: 'rgba(115,96,242,0.3)' },
     whatsapp: { label: 'WhatsApp', icon: '💬', color: '#25d366', bg: 'rgba(37,211,102,0.1)', border: 'rgba(37,211,102,0.3)' },
     zoom: { label: 'Zoom', icon: '🎥', color: '#2d8cff', bg: 'rgba(45,140,255,0.1)', border: 'rgba(45,140,255,0.3)' },
-    google_meet: { label: 'Google Meet', icon: '📹', color: '#00897b', bg: 'rgba(0,137,123,0.1)', border: 'rgba(0,137,123,0.3)' },
 }
 
 const getChannelInfo = (channel) =>
@@ -243,12 +242,26 @@ function AppointmentCard({ apt, status, formatDate, formatTime }) {
     const bookingId = apt.Id || apt.id
     const serverChannel = apt.PreferredChannel || apt.preferred_channel || ''
     const localChannelOverride = bookingId ? readChannelOverrides()[String(bookingId)] : ''
-    const initialChannel = localChannelOverride || serverChannel || 'telegram'
+    const normalizeChannel = (value) => {
+        const normalized = String(value || '').trim().toLowerCase()
+        if (normalized === 'google_meet') return 'zoom'
+        if (normalized in CHANNEL_INFO) return normalized
+        return ''
+    }
+    const initialChannel = normalizeChannel(localChannelOverride) || normalizeChannel(serverChannel) || 'telegram'
     const [currentChannel, setCurrentChannel] = useState(initialChannel)
     const [selectedChannel, setSelectedChannel] = useState(initialChannel)
     const [channelToast, setChannelToast] = useState({ type: '', text: '' })
 
     const meetingLink = (apt.MeetingLink || apt.meetingLink || '').trim()
+    const recordingPublishedRaw = apt.RecordingPublished ?? apt.recordingPublished
+    const recordingPublished = (
+        typeof recordingPublishedRaw === 'boolean'
+            ? recordingPublishedRaw
+            : ['true', '1', 'yes'].includes(String(recordingPublishedRaw || '').trim().toLowerCase())
+    )
+    const recordingLink = String(apt.RecordingLink || apt.recordingLink || '').trim()
+    const canDownloadRecording = (status === 'completed' || status === 'records_reviewed') && recordingPublished && !!recordingLink
 
     const getConsultChannelAction = (selectedChannel, useMeetingLink = false) => {
         if (useMeetingLink && meetingLink) {
@@ -263,8 +276,6 @@ function AppointmentCard({ apt, status, formatDate, formatTime }) {
                 return { href: 'https://wa.me/959421068582', label: 'WhatsApp ဖြင့် ဆက်သွယ်ရန်' }
             case 'zoom':
                 return { href: 'https://zoom.us/join', label: 'Zoom ဖြင့် တိုင်ပင်ရန်' }
-            case 'google_meet':
-                return { href: 'https://meet.google.com/', label: 'Google Meet ဖြင့် တိုင်ပင်ရန်' }
             default:
                 return { href: 'https://t.me/drtunhealthconsultant', label: 'Consultation စတင်ရန်' }
         }
@@ -501,6 +512,26 @@ function AppointmentCard({ apt, status, formatDate, formatTime }) {
                             {channelToast.text}
                         </div>
                     )}
+                </div>
+            )}
+
+            {canDownloadRecording && (
+                <div className="next-step-block">
+                    <div className="next-step-block__header">
+                        <span className="next-step-block__badge">Recording</span>
+                        <h4 className="next-step-block__title">🎥 Consultation Recording</h4>
+                    </div>
+                    <p className="next-step-block__desc">
+                        ဆွေးနွေးမှတ်တမ်း video ကို အောက်က button မှာ နှိပ်ပြီး ကြည့်ရှု/Download လုပ်နိုင်ပါသည်။
+                    </p>
+                    <a
+                        href={recordingLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-primary btn-next-step"
+                    >
+                        ⬇️ Recording Download
+                    </a>
                 </div>
             )}
 

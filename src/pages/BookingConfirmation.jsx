@@ -9,7 +9,6 @@ const CHANNEL_INFO = {
     viber:        { label: 'Viber',         icon: '📳',  color: '#7360f2', bg: 'rgba(115,96,242,0.1)', border: 'rgba(115,96,242,0.3)' },
     whatsapp:     { label: 'WhatsApp',      icon: '💬',  color: '#25d366', bg: 'rgba(37,211,102,0.1)', border: 'rgba(37,211,102,0.3)' },
     zoom:         { label: 'Zoom',          icon: '🎥',  color: '#2d8cff', bg: 'rgba(45,140,255,0.1)', border: 'rgba(45,140,255,0.3)' },
-    google_meet:  { label: 'Google Meet',   icon: '📹',  color: '#00897b', bg: 'rgba(0,137,123,0.1)',  border: 'rgba(0,137,123,0.3)' },
 }
 
 function ChannelBlock({ channel }) {

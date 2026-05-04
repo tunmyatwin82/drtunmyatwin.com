@@ -18,6 +18,11 @@ function LandingPage() {
         if (el) el.scrollIntoView({ behavior: 'smooth' })
     }
 
+    const scrollToConsultation = () => {
+        const el = document.getElementById('consultation')
+        if (el) el.scrollIntoView({ behavior: 'smooth' })
+    }
+
     const monthLabel = calendarMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
     const todayStr = new Date().toISOString().split('T')[0]
     const availableTimes = ['09:00', '10:00', '11:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00']
@@ -53,6 +58,17 @@ function LandingPage() {
     return (
         <div className="landing-page">
             <Navbar />
+            <div className="mobile-quick-nav">
+                <button type="button" className="mobile-quick-nav__btn mobile-quick-nav__btn--primary" onClick={scrollToConsultation}>
+                    🩺 ချိန်းဆိုရန်
+                </button>
+                <a href="/my-appointments" className="mobile-quick-nav__btn">
+                    📋 ချိန်းဆိုမှုများ
+                </a>
+                <button type="button" className="mobile-quick-nav__btn" onClick={scrollToForm}>
+                    🎁 အခမဲ့စာအုပ်
+                </button>
+            </div>
 
             {/* ===== HERO SECTION ===== */}
             <section className="hero">
@@ -217,7 +233,7 @@ function LandingPage() {
                                     <span className="about__avatar-emoji">👨‍⚕️</span>
                                 </div>
                                 <div className="about__image-badge badge-success">
-                                    <span>✅ Verified Pharmacist</span>
+                                    <span>✅ General Practitioner</span>
                                 </div>
                             </div>
                         </div>

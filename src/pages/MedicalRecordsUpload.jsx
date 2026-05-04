@@ -250,8 +250,8 @@ function MedicalRecordsUpload() {
                         <div className="mr-success__icon">✅</div>
                         <h2 className="mr-success__title">မှတ်တမ်းများ တင်ပြီးပါပြီ!</h2>
                         <p className="mr-success__desc">
-                            ဆရာဝန်က သင့်မှတ်တမ်းများကို စစ်ဆေးပါမည်။
-                            စစ်ဆေးပြီးပါက တိုင်ပင်ဆွေးနွေးမှုကို အတည်ပြုပါမည်။
+                            အခုနောက်တစ်ဆင့်အနေနဲ့ Admin Dashboard မှာ မှတ်တမ်းများကို review လုပ်ပေးမည်ဖြစ်ပြီး
+                            review ပြီးသွားချိန်တွင် သင်၏ ချိန်းဆိုမှုအခြေအနေကို <strong>ကျွန်တော့်ချိန်းဆိုမှုများ</strong> စာမျက်နှာမှ စစ်နိုင်ပါသည်။
                         </p>
 
                         {/* Next steps */}
@@ -261,27 +261,27 @@ function MedicalRecordsUpload() {
                             <div className="mr-next-step">
                                 <span className="mr-next-step__num">①</span>
                                 <div>
-                                    <div className="mr-next-step__head">ဆရာဝန်၏ အတည်ပြုချက် စောင့်ပါ</div>
-                                    <p className="mr-next-step__body">မှတ်တမ်းများ စစ်ဆေးပြီး ၁-၂ ရက်အတွင်း Booking status ကို <strong style={{ color: '#4ade80' }}>Confirmed</strong> ပြောင်းပေးပါမည်</p>
+                                    <div className="mr-next-step__head">လူနာဘက်: မှတ်တမ်းတင်ပြီးနောက် စောင့်ပါ</div>
+                                    <p className="mr-next-step__body">သင်လုပ်ဆောင်ရမယ့်အဆင့်ပြီးပါပြီ။ ဖုန်းကိုဖွင့်ထားပြီး ဆက်သွယ်မှုစာများကို စောင့်ကြည့်ပေးပါ။</p>
                                 </div>
                             </div>
 
                             <div className="mr-next-step">
                                 <span className="mr-next-step__num">②</span>
                                 <div>
-                                    <div className="mr-next-step__head">Booking status စစ်ဆေးရန်</div>
-                                    <p className="mr-next-step__body">မျက်နှာစာမှ <strong>"ကျွန်တော့်ချိန်းဆိုမှုများ"</strong> ကိုနှိပ်ပြီး သင့်ဖုန်းနံပါတ်ဖြင့် စစ်ဆေးနိုင်သည်</p>
-                                    <a href="/my-appointments" className="btn btn-secondary mr-next-step__btn">
-                                        🔍 ကျွန်တော့်ချိန်းဆိုမှု စစ်ဆေးရန်
-                                    </a>
+                                    <div className="mr-next-step__head">Admin ဘက်: Dashboard မှ Records Review လုပ်မည်</div>
+                                    <p className="mr-next-step__body">Admin သည် Admin Dashboard ထဲတွင် သင့်မှတ်တမ်းများကို စစ်ဆေးပြီးနောက် status ကို <strong style={{ color: '#4ade80' }}>Records Reviewed</strong> (သို့) အဆင်ပြေသည့်အခြေအနေသို့ update လုပ်ပါမည်။</p>
                                 </div>
                             </div>
 
                             <div className="mr-next-step">
                                 <span className="mr-next-step__num">③</span>
                                 <div>
-                                    <div className="mr-next-step__head">ချိန်းဆိုထားသော channel မှ ဆရာဝန်ဆက်သွယ်မည်</div>
-                                    <p className="mr-next-step__body">Booking confirm ဖြစ်ပြီးသည့်နောက် သတ်မှတ်ချိန်တွင် သင်ရွေးထားသော channel (Telegram / Viber / WhatsApp / Zoom / Google Meet) မှတဆင့် ဆရာဝန်က ဆက်သွယ်ပါမည်</p>
+                                    <div className="mr-next-step__head">လူနာဘက်: ချိန်းဆိုမှုအခြေအနေကို ဒီ link မှစစ်ပါ</div>
+                                    <p className="mr-next-step__body">အောက်က link ကိုနှိပ်ပြီး <strong>ဖုန်းနံပါတ်</strong> ဖြင့် စစ်ဆေးပါ။ Admin review ပြီးလျှင် အခြေအနေအသစ်ကိုမြင်ရပါမည်။</p>
+                                    <a href="/my-appointments" className="btn btn-secondary mr-next-step__btn">
+                                        🔍 ကျွန်တော့်ချိန်းဆိုမှု စစ်ဆေးရန်
+                                    </a>
                                 </div>
                             </div>
                         </div>

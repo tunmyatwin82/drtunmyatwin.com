@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import './AdminBookings.css'
@@ -23,6 +23,15 @@ function StatusBadge({ status }) {
 }
 
 function AdminBookings() {
+    const formatFileSize = (bytes = 0) => {
+        const value = Number(bytes)
+        if (!Number.isFinite(value) || value <= 0) return '0 B'
+        if (value < 1024) return `${value} B`
+        if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`
+        if (value < 1024 * 1024 * 1024) return `${(value / (1024 * 1024)).toFixed(1)} MB`
+        return `${(value / (1024 * 1024 * 1024)).toFixed(2)} GB`
+    }
+
     const parseApiResponse = async (response) => {
         const text = await response.text()
         try {
@@ -60,6 +69,20 @@ function AdminBookings() {
     const [status, setStatus] = useState('')
     const [date, setDate] = useState('')
     const [meetingLinks, setMeetingLinks] = useState({})
+    const [doctorMeetingLinks, setDoctorMeetingLinks] = useState({})
+    const [meetingProviders, setMeetingProviders] = useState({})
+    const [generatingLinkFor, setGeneratingLinkFor] = useState('')
+    const [recordingFiles, setRecordingFiles] = useState({})
+    const [uploadingRecordingFor, setUploadingRecordingFor] = useState('')
+    const [publishingRecordingFor, setPublishingRecordingFor] = useState('')
+    const recordingInputRefs = useRef({})
+
+    const isRecordingPublished = (row) => {
+        const raw = row?.RecordingPublished
+        if (typeof raw === 'boolean') return raw
+        const value = String(raw || '').trim().toLowerCase()
+        return value === 'true' || value === '1' || value === 'yes'
+    }
 
     const fetchRows = async () => {
         if (!adminKey) return
@@ -104,8 +127,24 @@ function AdminBookings() {
                 const next = { ...prev }
                 nextRows.forEach((row) => {
                     const id = String(row.Id || row.id)
+                    next[id] = row.MeetingLink || ''
+                })
+                return next
+            })
+            setDoctorMeetingLinks((prev) => {
+                const next = { ...prev }
+                nextRows.forEach((row) => {
+                    const id = String(row.Id || row.id)
+                    next[id] = row.DoctorMeetingLink || ''
+                })
+                return next
+            })
+            setMeetingProviders((prev) => {
+                const next = { ...prev }
+                nextRows.forEach((row) => {
+                    const id = String(row.Id || row.id)
                     if (!(id in next)) {
-                        next[id] = row.MeetingLink || ''
+                        next[id] = 'zoom'
                     }
                 })
                 return next
@@ -149,13 +188,14 @@ function AdminBookings() {
     const updateStatus = async (id, nextStatus) => {
         try {
             const meetingLink = (meetingLinks[String(id)] || '').trim()
+            const channel = String(meetingProviders[String(id)] || 'zoom').trim()
             const response = await fetch(`/api/admin/bookings/${id}/status`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
                     'x-admin-key': adminKey
                 },
-                body: JSON.stringify({ status: nextStatus, meetingLink })
+                body: JSON.stringify({ status: nextStatus, meetingLink, channel })
             })
             const data = await parseApiResponse(response)
             if (!response.ok) throw new Error(data.error || 'Update failed')
@@ -165,21 +205,90 @@ function AdminBookings() {
         }
     }
 
-    const saveMeetingLink = async (id) => {
+    const generateMeetingLink = async (id) => {
         try {
-            const response = await fetch(`/api/admin/bookings/${id}/meeting-link`, {
+            setGeneratingLinkFor(String(id))
+            const channel = String(meetingProviders[String(id)] || 'zoom').trim()
+            const response = await fetch(`/api/admin/bookings/${id}/meeting-link/auto`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-admin-key': adminKey
+                },
+                body: JSON.stringify({ channel })
+            })
+            const data = await parseApiResponse(response)
+            if (!response.ok) throw new Error(data.error || 'Failed to generate meeting link')
+            if (data.meetingLink) {
+                setMeetingLinks((prev) => ({
+                    ...prev,
+                    [String(id)]: data.meetingLink
+                }))
+            }
+            if (data.doctorStartLink) {
+                setDoctorMeetingLinks((prev) => ({
+                    ...prev,
+                    [String(id)]: data.doctorStartLink
+                }))
+            }
+            fetchRows()
+        } catch (err) {
+            alert(err.message)
+        } finally {
+            setGeneratingLinkFor('')
+        }
+    }
+
+    const uploadRecording = async (id) => {
+        const key = String(id)
+        const file = recordingFiles[key]
+        if (!file) {
+            alert('Recording file ကို ဦးစွာ ရွေးပါ')
+            return
+        }
+        try {
+            setUploadingRecordingFor(key)
+            const formData = new FormData()
+            formData.append('recording', file)
+            const response = await fetch(`/api/admin/bookings/${id}/recording-upload`, {
+                method: 'PATCH',
+                headers: {
+                    'x-admin-key': adminKey
+                },
+                body: formData
+            })
+            const data = await parseApiResponse(response)
+            if (!response.ok) throw new Error(data.error || 'Failed to upload recording')
+            setRecordingFiles((prev) => ({ ...prev, [key]: null }))
+            if (recordingInputRefs.current[key]) {
+                recordingInputRefs.current[key].value = ''
+            }
+            fetchRows()
+        } catch (err) {
+            alert(err.message)
+        } finally {
+            setUploadingRecordingFor('')
+        }
+    }
+
+    const toggleRecordingVisibility = async (id, publish) => {
+        try {
+            setPublishingRecordingFor(String(id))
+            const response = await fetch(`/api/admin/bookings/${id}/recording-visibility`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
                     'x-admin-key': adminKey
                 },
-                body: JSON.stringify({ meetingLink: (meetingLinks[String(id)] || '').trim() })
+                body: JSON.stringify({ publish })
             })
             const data = await parseApiResponse(response)
-            if (!response.ok) throw new Error(data.error || 'Failed to save meeting link')
+            if (!response.ok) throw new Error(data.error || 'Failed to update recording visibility')
             fetchRows()
         } catch (err) {
             alert(err.message)
+        } finally {
+            setPublishingRecordingFor('')
         }
     }
 
@@ -228,6 +337,9 @@ function AdminBookings() {
                                     <button className="btn btn-secondary" onClick={() => { setPage(1); fetchRows() }}>Search</button>
                                     <button className="btn btn-secondary" onClick={clearKey}>Lock</button>
                                 </div>
+                                <div className="admin-help-note">
+                                    <strong>အသုံးပြုပုံ:</strong> <span>`Auto Link` နှိပ်လျှင် Zoom link ကို အလိုအလျောက် generate + save လုပ်ပြီးသားဖြစ်သည်။ Host အဖြစ်ဝင်ရန် `Start Meeting (Host)` ကိုသုံးပါ။ Recording သည် `Complete` status ဖြစ်ပြီး `Publish Recording` နှိပ်ပြီးမှ လူနာဘက်တွင် ပေါ်မည်။</span>
+                                </div>
 
                                 {error && <div className="admin-error">{error}</div>}
                                 {loading ? (
@@ -256,27 +368,122 @@ function AdminBookings() {
                                                         <td>{row.PreferredDate || '-'}</td>
                                                         <td>{row.PreferredTime || '-'}</td>
                                                         <td>
+                                                            {(() => {
+                                                                const rowId = String(row.Id || row.id)
+                                                                const doctorStartLink = (doctorMeetingLinks[rowId] || '').trim()
+                                                                return (
                                                             <div className="meeting-link-cell">
                                                                 <input
                                                                     type="url"
                                                                     className="form-input"
                                                                     placeholder="https://meet.google.com/... or https://zoom.us/j/..."
-                                                                    value={meetingLinks[String(row.Id || row.id)] || ''}
+                                                                    value={meetingLinks[rowId] || ''}
                                                                     onChange={(e) => setMeetingLinks((prev) => ({
                                                                         ...prev,
-                                                                        [String(row.Id || row.id)]: e.target.value
+                                                                        [rowId]: e.target.value
                                                                     }))}
                                                                 />
-                                                                <button
-                                                                    className="btn btn-secondary btn-sm"
-                                                                    onClick={() => saveMeetingLink(row.Id || row.id)}
-                                                                >
-                                                                    Save Link
-                                                                </button>
+                                                                <div className="meeting-link-actions">
+                                                                    <select
+                                                                        className="form-input meeting-provider-select"
+                                                                        value={meetingProviders[rowId] || 'zoom'}
+                                                                        onChange={(e) => setMeetingProviders((prev) => ({
+                                                                            ...prev,
+                                                                            [rowId]: e.target.value
+                                                                        }))}
+                                                                    >
+                                                                        <option value="zoom">Zoom Auto</option>
+                                                                    </select>
+                                                                    <button
+                                                                        className="btn btn-secondary btn-sm"
+                                                                        onClick={() => generateMeetingLink(row.Id || row.id)}
+                                                                        disabled={generatingLinkFor === rowId}
+                                                                    >
+                                                                        {generatingLinkFor === rowId ? 'Generating...' : 'Auto Link'}
+                                                                    </button>
+                                                                </div>
+                                                                {doctorStartLink && (
+                                                                    <div className="meeting-link-open-actions">
+                                                                        <a
+                                                                            href={doctorStartLink}
+                                                                            target="_blank"
+                                                                            rel="noopener noreferrer"
+                                                                            className="btn btn-primary btn-sm"
+                                                                        >
+                                                                            Start Meeting (Host)
+                                                                        </a>
+                                                                    </div>
+                                                                )}
                                                             </div>
+                                                                )
+                                                            })()}
                                                         </td>
                                                         <td><StatusBadge status={resolveStatus(row)} /></td>
                                                         <td className="actions">
+                                                            {(() => {
+                                                                const rowId = String(row.Id || row.id)
+                                                                const hasRecording = Boolean(String(row.RecordingLink || '').trim())
+                                                                const published = isRecordingPublished(row)
+                                                                const status = resolveStatus(row)
+                                                                const canPublish = hasRecording && (status === 'completed' || status === 'records_reviewed')
+                                                                const selectedFile = recordingFiles[rowId]
+                                                                const recordingUploadState = uploadingRecordingFor === rowId
+                                                                    ? { text: 'Uploading...', cls: 'uploading' }
+                                                                    : selectedFile
+                                                                        ? { text: 'Chosen', cls: 'chosen' }
+                                                                        : hasRecording
+                                                                            ? { text: 'Uploaded', cls: 'uploaded' }
+                                                                            : { text: 'No file', cls: 'idle' }
+                                                                return (
+                                                                    <>
+                                                                        <input
+                                                                            ref={(el) => { recordingInputRefs.current[rowId] = el }}
+                                                                            type="file"
+                                                                            accept="video/mp4,video/x-m4v,video/*,.mp4,.mov,.m4v"
+                                                                            className="admin-hidden-file-input"
+                                                                            onChange={(e) => setRecordingFiles((prev) => ({
+                                                                                ...prev,
+                                                                                [rowId]: e.target.files?.[0] || null
+                                                                            }))}
+                                                                        />
+                                                                        {recordingFiles[rowId] && (
+                                                                            <span className="recording-file-meta">
+                                                                                {recordingFiles[rowId].name} ({formatFileSize(recordingFiles[rowId].size)})
+                                                                            </span>
+                                                                        )}
+                                                                        <span className={`recording-status-chip recording-status-chip--${recordingUploadState.cls}`}>
+                                                                            {recordingUploadState.text}
+                                                                        </span>
+                                                                        <button
+                                                                            className="btn btn-secondary btn-sm"
+                                                                            onClick={() => recordingInputRefs.current[rowId]?.click()}
+                                                                        >
+                                                                            Choose Recording
+                                                                        </button>
+                                                                        <button
+                                                                            className="btn btn-secondary btn-sm"
+                                                                            onClick={() => uploadRecording(row.Id || row.id)}
+                                                                            disabled={uploadingRecordingFor === rowId}
+                                                                        >
+                                                                            {uploadingRecordingFor === rowId ? 'Uploading...' : 'Upload Recording'}
+                                                                        </button>
+                                                                        <button
+                                                                            className="btn btn-secondary btn-sm"
+                                                                            onClick={() => toggleRecordingVisibility(row.Id || row.id, true)}
+                                                                            disabled={!canPublish || publishingRecordingFor === rowId}
+                                                                        >
+                                                                            {published ? 'Published' : 'Publish Recording'}
+                                                                        </button>
+                                                                        <button
+                                                                            className="btn btn-secondary btn-sm"
+                                                                            onClick={() => toggleRecordingVisibility(row.Id || row.id, false)}
+                                                                            disabled={!hasRecording || publishingRecordingFor === rowId}
+                                                                        >
+                                                                            Hide Recording
+                                                                        </button>
+                                                                    </>
+                                                                )
+                                                            })()}
                                                             <button className="btn btn-primary btn-sm" onClick={() => updateStatus(row.Id || row.id, 'confirmed')}>Confirm</button>
                                                             <button className="btn btn-secondary btn-sm" onClick={() => updateStatus(row.Id || row.id, 'records_reviewed')}>Records Reviewed</button>
                                                             <button className="btn btn-secondary btn-sm" onClick={() => updateStatus(row.Id || row.id, 'rejected')}>Reject</button>
