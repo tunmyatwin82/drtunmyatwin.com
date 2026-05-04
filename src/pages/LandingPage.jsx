@@ -229,9 +229,11 @@ function LandingPage() {
                     <div className="about__content">
                         <div className="about__image-wrapper">
                             <div className="about__image-frame">
-                                <div className="about__avatar">
-                                    <span className="about__avatar-emoji">👨‍⚕️</span>
-                                </div>
+                                <img
+                                    src="/about-doctor-photo-v2.png?v=20260505-3"
+                                    alt="Dr. Tun Myat Win"
+                                    className="about__avatar-photo"
+                                />
                                 <div className="about__image-badge badge-success">
                                     <span>✅ General Practitioner</span>
                                 </div>
