@@ -52,8 +52,8 @@ function Navbar() {
                 </a>
 
                 <div className={`navbar__links ${mobileOpen ? 'navbar__links--open' : ''}`}>
-                    <a href="#benefits" onClick={(e) => navigateToSection('benefits', e)}>အကျိုးကျေးဇူးများ</a>
-                    <a href="#about" onClick={(e) => navigateToSection('about', e)}>ကျွန်တော့်အကြောင်း</a>
+                    <a className="navbar__link" href="#benefits" onClick={(e) => navigateToSection('benefits', e)}>✨ အကျိုးကျေးဇူးများ</a>
+                    <a className="navbar__link" href="#about" onClick={(e) => navigateToSection('about', e)}>👨‍⚕️ ကျွန်တော့်အကြောင်း</a>
                     <a href="#testimonials" onClick={(e) => navigateToSection('testimonials', e)}>သုံးသပ်ချက်များ</a>
                     <a href="#faq" onClick={(e) => navigateToSection('faq', e)}>မေးလေ့ရှိသောမေးခွန်းများ</a>
                     <a href="#consultation" onClick={(e) => navigateToSection('consultation', e)}>တိုင်ပင်ဆွေးနွေးခြင်း</a>
