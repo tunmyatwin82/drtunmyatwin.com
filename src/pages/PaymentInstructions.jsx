@@ -35,7 +35,8 @@ function PaymentInstructions() {
         if (!bookingData?.phone) {
             navigate('/#consultation')
         }
-    }, [])
+        // Intentionally once on mount: scroll, persist route state, redirect if missing booking context.
+    }, []) // eslint-disable-line react-hooks/exhaustive-deps -- mount-only guard
 
     const channel = CHANNEL_INFO[bookingData?.preferred_channel] || null
 

@@ -295,7 +295,7 @@ function AppointmentCard({ apt, status, formatDate, formatTime }) {
             setCurrentChannel(nextChannel)
             writeChannelOverride(bookingId, nextChannel)
             setChannelToast({ type: 'success', text: 'Channel ပြောင်းပြီးပါပြီ' })
-        } catch (error) {
+        } catch {
             // Fallback: keep user flow smooth even if backend update fails.
             setCurrentChannel(nextChannel)
             writeChannelOverride(bookingId, nextChannel)

@@ -50,10 +50,6 @@ function LandingPage() {
         return days
     }, [calendarMonth, todayStr])
 
-    const selectedDateLabel = selectedDate
-        ? new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short' })
-        : 'နေ့ရက် မရွေးရသေးပါ'
-
     return (
         <div className="landing-page">
             <Navbar />

@@ -13,16 +13,36 @@ dotenv.config()
 
 const app = express()
 const PORT = process.env.PORT || 8000
+const isProduction = process.env.NODE_ENV === 'production'
 
 const NOCODB_API_URL = process.env.NOCODB_API_URL || process.env.VITE_NOCODB_API_URL || 'https://db.drtunmyatwin.com'
 const NOCODB_BOOKING_TABLE_ID = process.env.NOCODB_BOOKING_TABLE_ID || 'mkuij3x9lav2v81'
 const NOCODB_LEAD_TABLE_ID = process.env.NOCODB_LEAD_TABLE_ID || process.env.VITE_NOCODB_TABLE_ID || 'mz6cj5r8sxt9oif'
-const rawToken = process.env.NOCODB_API_TOKEN || process.env.VITE_NOCODB_API_TOKEN || ''
-const NOCODB_API_TOKEN =
-    rawToken && !rawToken.includes('XXXX')
-        ? rawToken
-        : '0bXBuEIqxEBHjqRWceYkHw74c5FRe3AR7tCpAgy3'
-const ADMIN_DASHBOARD_KEY = process.env.ADMIN_DASHBOARD_KEY || 'dev-admin-key'
+const fallbackDevNocoToken = '0bXBuEIqxEBHjqRWceYkHw74c5FRe3AR7tCpAgy3'
+const rawNocoToken = String(process.env.NOCODB_API_TOKEN || process.env.VITE_NOCODB_API_TOKEN || '').trim()
+const hasPlaceholderNocoToken = rawNocoToken.toLowerCase().includes('xxxx') || rawNocoToken.toLowerCase().includes('your_') || rawNocoToken.toLowerCase().includes('_here')
+const NOCODB_API_TOKEN = !isProduction && hasPlaceholderNocoToken ? fallbackDevNocoToken : rawNocoToken
+const ADMIN_DASHBOARD_KEY = String(process.env.ADMIN_DASHBOARD_KEY || (!isProduction ? 'dev-admin-key' : '')).trim()
+
+const invalidSecretValue = (value = '') => {
+    const normalized = String(value).trim().toLowerCase()
+    return (
+        !normalized
+        || normalized.includes('your_')
+        || normalized.includes('_here')
+    )
+}
+
+if (invalidSecretValue(NOCODB_API_TOKEN)) {
+    console.warn('Warning: Missing valid NOCODB_API_TOKEN. NocoDB-backed endpoints will fail until it is configured.')
+}
+
+if (invalidSecretValue(ADMIN_DASHBOARD_KEY)) {
+    console.warn('Warning: Missing valid ADMIN_DASHBOARD_KEY. Admin endpoints are disabled until it is configured.')
+}
+
+const hasValidNocoToken = !invalidSecretValue(NOCODB_API_TOKEN)
+const hasValidAdminKey = !invalidSecretValue(ADMIN_DASHBOARD_KEY)
 
 const normalizeMyanmarPhone = (phone = '') => {
     const digits = String(phone).replace(/[^\d+]/g, '')
@@ -38,6 +58,10 @@ app.use(express.json({ limit: '10mb' }))
 const upload = multer({ storage: multer.memoryStorage() })
 
 const nocodbRequest = async (path, options = {}) => {
+    if (!hasValidNocoToken) {
+        throw new Error('Server is missing a valid NOCODB_API_TOKEN.')
+    }
+
     const response = await fetch(`${NOCODB_API_URL}${path}`, {
         ...options,
         headers: {
@@ -56,6 +80,10 @@ const nocodbRequest = async (path, options = {}) => {
 }
 
 const requireAdmin = (req, res, next) => {
+    if (!hasValidAdminKey) {
+        return res.status(503).json({ error: 'Admin is not configured on this server.' })
+    }
+
     if (req.headers['x-admin-key'] !== ADMIN_DASHBOARD_KEY) {
         return res.status(401).json({ error: 'Unauthorized' })
     }
