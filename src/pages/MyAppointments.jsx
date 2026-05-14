@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
@@ -16,6 +16,8 @@ const getChannelInfo = (channel) =>
     CHANNEL_INFO[channel] || { label: channel || 'N/A', icon: '📱', color: '#94a3b8', bg: 'rgba(148,163,184,0.1)', border: 'rgba(148,163,184,0.3)' }
 
 const CHANNEL_OVERRIDE_KEY = 'booking_channel_overrides'
+/** Saved phone/email so users need not re-enter after admin updates status */
+const MY_APPOINTMENTS_SEARCH_KEY = 'drtunmyatwin_my_appointments_search'
 
 const readChannelOverrides = () => {
     try {
@@ -106,27 +108,92 @@ function MyAppointments() {
     const [appointments, setAppointments] = useState([])
     const [isSearching, setIsSearching] = useState(false)
     const [hasSearched, setHasSearched] = useState(false)
+    const lastSearchRef = useRef(null)
 
-    const handleSearch = async () => {
-        if (!searchTerm.trim()) {
-            alert('ဖုန်းနံပါတ် သို့မဟုတ် အီးမေးလ် ထည့်ပေးပါ')
+    const runSearchWithParams = useCallback(async (type, valueRaw, options = {}) => {
+        const { silent = false } = options
+        const value = String(valueRaw || '').trim()
+        if (!value) {
+            if (!silent) alert('ဖုန်းနံပါတ် သို့မဟုတ် အီးမေးလ် ထည့်ပေးပါ')
             return
         }
-        setIsSearching(true)
+        const t = type === 'email' ? 'email' : 'phone'
+        if (!silent) setIsSearching(true)
         setHasSearched(true)
         try {
-            const params = new URLSearchParams({ type: searchType, value: searchTerm })
+            const params = new URLSearchParams({ type: t, value })
             const res = await fetch(`/api/bookings/search?${params}`)
             if (!res.ok) throw new Error('Failed')
             const data = await res.json()
             setAppointments(data || [])
+            try {
+                localStorage.setItem(MY_APPOINTMENTS_SEARCH_KEY, JSON.stringify({ type: t, value }))
+                lastSearchRef.current = { type: t, value }
+            } catch {
+                /* quota / private mode */
+            }
         } catch {
-            alert('ရှာဖွေမှု မအောင်မြင်ပါ။ နောက်မှ ထပ်ကြိုးစားပါ။')
-            setAppointments([])
+            if (!silent) {
+                alert('ရှာဖွေမှု မအောင်မြင်ပါ။ နောက်မှ ထပ်ကြိုးစားပါ။')
+                setAppointments([])
+            }
         } finally {
-            setIsSearching(false)
+            if (!silent) setIsSearching(false)
         }
+    }, [])
+
+    const handleSearch = () => runSearchWithParams(searchType, searchTerm)
+
+    const clearSavedSearch = () => {
+        try {
+            localStorage.removeItem(MY_APPOINTMENTS_SEARCH_KEY)
+        } catch { /* ignore */ }
+        lastSearchRef.current = null
+        setAppointments([])
+        setHasSearched(false)
+        setSearchTerm('')
     }
+
+    useEffect(() => {
+        let cancelled = false
+        ;(async () => {
+            try {
+                const raw = localStorage.getItem(MY_APPOINTMENTS_SEARCH_KEY)
+                if (!raw) return
+                const parsed = JSON.parse(raw)
+                const t = parsed.type === 'email' ? 'email' : 'phone'
+                const v = String(parsed.value || '').trim()
+                if (!v) return
+                if (cancelled) return
+                setSearchType(t)
+                setSearchTerm(v)
+                await runSearchWithParams(t, v)
+            } catch {
+                /* invalid storage */
+            }
+        })()
+        return () => {
+            cancelled = true
+        }
+    }, [runSearchWithParams])
+
+    useEffect(() => {
+        const id = window.setInterval(() => {
+            const s = lastSearchRef.current
+            if (s?.type && s.value) runSearchWithParams(s.type, s.value, { silent: true })
+        }, 45_000)
+        return () => window.clearInterval(id)
+    }, [runSearchWithParams])
+
+    useEffect(() => {
+        const onVis = () => {
+            if (document.visibilityState !== 'visible') return
+            const s = lastSearchRef.current
+            if (s?.type && s.value) runSearchWithParams(s.type, s.value, { silent: true })
+        }
+        document.addEventListener('visibilitychange', onVis)
+        return () => document.removeEventListener('visibilitychange', onVis)
+    }, [runSearchWithParams])
 
     const resolveStatus = resolveBookingDisplayStatus
 
@@ -160,7 +227,8 @@ function MyAppointments() {
 
                         <h1 className="appointments-title">ကျွန်တော့်ချိန်းဆိုမှုများ</h1>
                         <p className="appointments-subtitle">
-                            သင့်ဖုန်းနံပါတ် သို့မဟုတ် အီးမေးလ်ဖြင့် ချိန်းဆိုမှုများကို ရှာဖွေပါ။
+                            ဖုန်းနံပါတ် သို့ အီးမေးလ်ဖြင့် တစ်ကြိမ် ရှာဖွေပါ။ ဤစက်တွင်သိမ်းထားသဖြင့် နောက်ကြိမ် ဝင်ရောက်ချိန်မှာ
+                            ပြန်ထည့်စရာမလိုပါ — Admin ပြင်ဆင်ချက်များကိုလည်း မိနစ် ၄၅ ခန့်အတွင်း (နောက်တစ်ကြိမ် စာမျက်နှာပြန်ဖွင့်လိုက်၌) အလိုအလျောက် ပြန်ဆွဲပါမည်။
                         </p>
 
                         <div className="search-card glass-card">
@@ -187,6 +255,14 @@ function MyAppointments() {
                                     {isSearching ? 'ရှာဖွေနေ...' : '🔍 ရှာဖွေရန်'}
                                 </button>
                             </div>
+                            <p className="appointments-saved-hint">
+                                လုံခြုံရေး အတွက် အခြားသူနှင့် စက်တူသုံးပါက အောက်လင့်ဖြင့် သိမ်းချက်ကို ဖျက်နိုင်ပါသည်။
+                            </p>
+                            {hasSearched && (
+                                <button type="button" className="appointments-clear-saved" onClick={clearSavedSearch}>
+                                    အခြားဖုန်းနံပါတ်/အီးမေးလ်ဖြင့် ရှာမည် (သိမ်းထားမှု ဖျက်ရန်)
+                                </button>
+                            )}
                         </div>
 
                         {hasSearched && (
