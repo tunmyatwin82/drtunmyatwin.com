@@ -96,8 +96,17 @@ let zoomTokenCache = { token: '', expiresAt: 0 }
 let runtimeGoogleRefreshToken = ''
 let googleOauthState = ''
 
+/** Burmese / fullwidth / Arabic-Indic digits → ASCII before stripping. */
+const toAsciiPhoneChars = (s) => {
+    let t = String(s ?? '').normalize('NFKC').trim()
+    t = t.replace(/[\u1040-\u1049]/g, (ch) => String(ch.charCodeAt(0) - 0x1040))
+    t = t.replace(/[\uFF10-\uFF19]/g, (ch) => String(ch.charCodeAt(0) - 0xff10 + 0x30))
+    t = t.replace(/[\u0660-\u0669]/g, (ch) => String(ch.charCodeAt(0) - 0x0660 + 0x30))
+    return t
+}
+
 const normalizeMyanmarPhone = (phone = '') => {
-    const digits = String(phone).replace(/[^\d+]/g, '')
+    const digits = String(toAsciiPhoneChars(phone)).replace(/[^\d+]/g, '')
     if (digits.startsWith('+959')) return digits
     if (digits.startsWith('959')) return `+${digits}`
     if (digits.startsWith('09')) return `+959${digits.slice(2)}`
@@ -117,6 +126,27 @@ const myanmarPhoneEqVariants = (rawInput) => {
         variants.add(d)
     }
     return [...variants].filter(Boolean)
+}
+
+/** National number (e.g. 421099582) for NocoDB `like` when exact `eq` misses formatted cells. */
+const nationalMobileCoresForLike = (normalizedPlusForm) => {
+    const d = String(normalizedPlusForm).replace(/\D/g, '')
+    const cores = new Set()
+    if (d.startsWith('959') && d.length > 3) cores.add(d.slice(3))
+    if (d.startsWith('09') && d.length > 2) cores.add(d.slice(2))
+    if (/^9\d{7,}$/.test(d) && !d.startsWith('959')) cores.add(d)
+    const out = [...cores].filter((c) => c.length >= 8)
+    out.sort((a, b) => b.length - a.length)
+    return out
+}
+
+const canonicalPhoneDigits = (raw) => normalizeMyanmarPhone(String(raw ?? '')).replace(/\D/g, '')
+
+const phonesMatchForSearch = (stored, queryRaw) => {
+    const a = canonicalPhoneDigits(stored)
+    const b = canonicalPhoneDigits(queryRaw)
+    if (!a || !b) return false
+    return a === b
 }
 
 app.use(cors())
@@ -491,15 +521,10 @@ app.get('/api/bookings/search', async (req, res) => {
         let safeValue = String(value).replace(/,/g, '').trim()
 
         if (type === 'phone') {
-            const variants = myanmarPhoneEqVariants(safeValue)
             const seen = new Set()
             const merged = []
-            for (const v of variants) {
-                const encoded = encodeURIComponent(v)
-                const data = await nocodbRequest(
-                    `/api/v2/tables/${NOCODB_BOOKING_TABLE_ID}/records?where=(${field},eq,${encoded})&sort=-CreatedAt`
-                )
-                for (const row of data.list || []) {
+            const pushRows = (list) => {
+                for (const row of list || []) {
                     const id = row?.Id ?? row?.id
                     if (id != null && !seen.has(id)) {
                         seen.add(id)
@@ -507,6 +532,34 @@ app.get('/api/bookings/search', async (req, res) => {
                     }
                 }
             }
+
+            for (const v of myanmarPhoneEqVariants(safeValue)) {
+                const encoded = encodeURIComponent(v)
+                const data = await nocodbRequest(
+                    `/api/v2/tables/${NOCODB_BOOKING_TABLE_ID}/records?where=(${field},eq,${encoded})&sort=-CreatedAt`
+                )
+                pushRows(data.list)
+            }
+
+            // Manual / Excel / odd spacing: substring match on national digits, then verify equality.
+            if (merged.length === 0) {
+                const cores = nationalMobileCoresForLike(normalizeMyanmarPhone(safeValue))
+                for (const core of cores) {
+                    const encoded = encodeURIComponent(core)
+                    try {
+                        const data = await nocodbRequest(
+                            `/api/v2/tables/${NOCODB_BOOKING_TABLE_ID}/records?where=(${field},like,${encoded})&limit=200&sort=-CreatedAt`
+                        )
+                        const filtered = (data.list || []).filter((row) =>
+                            phonesMatchForSearch(row.Phone || row.phone, safeValue)
+                        )
+                        pushRows(filtered)
+                    } catch {
+                        /* column or operator mismatch — skip */
+                    }
+                }
+            }
+
             merged.sort((a, b) => {
                 const ta = new Date(a.CreatedAt || a.created_at || 0).getTime()
                 const tb = new Date(b.CreatedAt || b.created_at || 0).getTime()
