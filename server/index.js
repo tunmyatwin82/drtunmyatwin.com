@@ -19,6 +19,8 @@ const isProduction = process.env.NODE_ENV === 'production'
 
 const NOCODB_API_URL = process.env.NOCODB_API_URL || process.env.VITE_NOCODB_API_URL || 'https://db.drtunmyatwin.com'
 const NOCODB_BOOKING_TABLE_ID = process.env.NOCODB_BOOKING_TABLE_ID || 'mkuij3x9lav2v81'
+/** NocoDB attachment column for patient medical files (must match the column’s API name in table settings). */
+const NOCODB_MEDICAL_RECORDS_FIELD = String(process.env.NOCODB_MEDICAL_RECORDS_FIELD || 'MedicalRecords').trim()
 const NOCODB_LEAD_TABLE_ID = process.env.NOCODB_LEAD_TABLE_ID || process.env.VITE_NOCODB_TABLE_ID || 'mz6cj5r8sxt9oif'
 const ZOOM_ACCOUNT_ID = String(process.env.ZOOM_ACCOUNT_ID || '').trim()
 const ZOOM_CLIENT_ID = String(process.env.ZOOM_CLIENT_ID || '').trim()
@@ -145,6 +147,12 @@ const uploadFileToNocoStorage = async (file, fallbackName = 'upload.bin') => {
         throw new Error('Failed to upload file to NocoDB storage')
     }
     return uploaded
+}
+
+const toAttachmentList = (value) => {
+    if (Array.isArray(value)) return value.filter(Boolean)
+    if (value && typeof value === 'object') return [value]
+    return []
 }
 
 const uploadFileToGoogleDrive = async (file, fileNamePrefix = 'consultation-recording') => {
@@ -566,21 +574,57 @@ app.patch('/api/bookings/:id/medical-records', upload.array('files', 10), async 
             return res.status(400).json({ error: 'At least one file is required' })
         }
 
-        // Upload each file to NocoDB storage
+        const recordId = Number(req.params.id)
+        if (!Number.isFinite(recordId)) {
+            return res.status(400).json({ error: 'Invalid booking id' })
+        }
+
+        const field = NOCODB_MEDICAL_RECORDS_FIELD
+        const record = await nocodbRequest(`/api/v2/tables/${NOCODB_BOOKING_TABLE_ID}/records/${recordId}`)
+        const rawExisting = record[field]
+        const existing = toAttachmentList(rawExisting)
+
         const uploadedFiles = []
         for (const file of req.files) {
-            const uploaded = await uploadFileToNocoStorage(file, 'medical-record.jpg')
+            const uploaded = await uploadFileToNocoStorage(file, file.originalname || 'medical-record.jpg')
             uploadedFiles.push(...uploaded)
         }
 
-        const updated = await nocodbRequest(`/api/v2/tables/${NOCODB_BOOKING_TABLE_ID}/records`, {
-            method: 'PATCH',
-            body: JSON.stringify({
-                Id: Number(req.params.id),
-                MedicalRecords: uploadedFiles
-            })
+        const normalized = uploadedFiles.map((a) => {
+            const o = typeof a === 'object' && a ? a : {}
+            return {
+                ...o,
+                title: o.title || o.filename || o.FileName || 'medical-record'
+            }
         })
-        res.json(updated)
+
+        const merged = [...existing, ...normalized]
+
+        const payload = { [field]: merged }
+        try {
+            await nocodbRequest(`/api/v2/tables/${NOCODB_BOOKING_TABLE_ID}/records/${recordId}`, {
+                method: 'PATCH',
+                body: JSON.stringify(payload)
+            })
+        } catch {
+            await nocodbRequest(`/api/v2/tables/${NOCODB_BOOKING_TABLE_ID}/records`, {
+                method: 'PATCH',
+                body: JSON.stringify({ Id: recordId, ...payload })
+            })
+        }
+
+        const after = await nocodbRequest(`/api/v2/tables/${NOCODB_BOOKING_TABLE_ID}/records/${recordId}`)
+        const afterList = toAttachmentList(after[field])
+
+        if (merged.length > 0 && afterList.length === 0) {
+            console.error('[medical-records] NocoDB field empty after PATCH', { recordId, field })
+            return res.status(502).json({
+                error:
+                    'မှတ်တမ်း ဖိုင်များ ဒေတာဘေ့စ်မှာ မသိမ်းရသေးပါ။ NocoDB မှာ booking စာပိုင်းတွင်း Attachment column နာမည် (API column name) သည် server env `NOCODB_MEDICAL_RECORDS_FIELD` နှင့် တူညီရမည်။ စာမျက်နှာ: Table → ပြင်ဆင်ချက် → Medical records ကော်လံ၏ "Column name" ကို ကြည့်ပြီး .env တွင် ထည့်ပါ။'
+            })
+        }
+
+        res.json(after)
     } catch (error) {
         res.status(500).json({ error: error.message })
     }

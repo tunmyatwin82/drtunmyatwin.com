@@ -95,7 +95,8 @@ function MedicalRecordsUpload() {
             const res = await fetch(`/api/bookings/${bookingId}/medical-records`, {
                 method: 'PATCH', body: formData
             })
-            if (!res.ok) throw new Error('Upload failed')
+            const data = await res.json().catch(() => ({}))
+            if (!res.ok) throw new Error(data.error || `Upload failed (${res.status})`)
             setUploadSuccess(true)
         } catch (err) {
             alert(`မအောင်မြင်ပါ: ${err.message}`)
