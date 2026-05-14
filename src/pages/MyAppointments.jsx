@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import './MyAppointments.css'
+import { resolveBookingDisplayStatus } from '../utils/bookingStatus'
 
 const CHANNEL_INFO = {
     telegram: { label: 'Telegram', icon: '✈️', color: '#2aabee', bg: 'rgba(42,171,238,0.1)', border: 'rgba(42,171,238,0.3)' },
@@ -127,14 +128,7 @@ function MyAppointments() {
         }
     }
 
-    const resolveStatus = (apt) => {
-        if (apt.BookingStatus) return apt.BookingStatus
-        if (apt.PaymentStatus) return apt.PaymentStatus
-        if (typeof apt.ConsultationType === 'string' && apt.ConsultationType.startsWith('status:'))
-            return apt.ConsultationType.replace('status:', '')
-        if (apt.PaymentScreenshot) return 'payment_submitted'
-        return 'pending_payment'
-    }
+    const resolveStatus = resolveBookingDisplayStatus
 
     const formatDate = (d) => {
         if (!d) return 'N/A'

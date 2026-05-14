@@ -382,15 +382,15 @@ const updateBookingMeetingLinks = async (bookingId, joinUrl, startUrl = '') => {
     }
 }
 
-/** Same rules as AdminBookings.jsx resolveStatus, lowercased for filter comparison */
+/** Same rules as src/utils/bookingStatus.js (ConsultationType status:* wins). */
 const normalizeStatusToken = (value) => String(value || '').trim().toLowerCase().replace(/\s+/g, '_')
 
 const resolveBookingRowStatusKey = (item) => {
-    if (item.BookingStatus) return normalizeStatusToken(item.BookingStatus)
-    if (item.PaymentStatus) return normalizeStatusToken(item.PaymentStatus)
     if (typeof item.ConsultationType === 'string' && item.ConsultationType.startsWith('status:')) {
         return normalizeStatusToken(item.ConsultationType.replace('status:', ''))
     }
+    if (item.BookingStatus) return normalizeStatusToken(item.BookingStatus)
+    if (item.PaymentStatus) return normalizeStatusToken(item.PaymentStatus)
     if (item.PaymentScreenshot) return 'payment_submitted'
     return 'pending_payment'
 }

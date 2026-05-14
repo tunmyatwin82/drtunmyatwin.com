@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import './AdminBookings.css'
+import { resolveBookingDisplayStatus } from '../utils/bookingStatus'
 
 const PAGE_SIZE = 10
 
@@ -41,15 +42,7 @@ function AdminBookings() {
         }
     }
 
-    const resolveStatus = (row) => {
-        if (row.BookingStatus) return row.BookingStatus
-        if (row.PaymentStatus) return row.PaymentStatus
-        if (typeof row.ConsultationType === 'string' && row.ConsultationType.startsWith('status:')) {
-            return row.ConsultationType.replace('status:', '')
-        }
-        if (row.PaymentScreenshot) return 'payment_submitted'
-        return 'pending_payment'
-    }
+    const resolveStatus = resolveBookingDisplayStatus
     const [adminKey, setAdminKey] = useState(() => {
         const stored = sessionStorage.getItem('adminKey') || ''
         // Clear corrupt (non-ASCII) keys from previous sessions
