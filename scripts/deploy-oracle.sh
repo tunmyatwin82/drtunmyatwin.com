@@ -5,7 +5,7 @@
 set -euo pipefail
 ORACLE_HOST="${ORACLE_HOST:-138.2.67.33}"
 ORACLE_USER="${ORACLE_USER:-ubuntu}"
-ORACLE_KEY="${ORACLE_KEY:-${HOME}/Desktop/tunmyatwin/oracle-ssh/ssh-key.key}}"
+ORACLE_KEY="${ORACLE_KEY:-${HOME}/Desktop/tunmyatwin/oracle-ssh/ssh-key.key}"
 REMOTE_DIR="${REMOTE_DIR:-/home/ubuntu/drtunmyatwin-website}"
 NETWORK="${NETWORK:-drtunmyatwin-website_default}"
 
