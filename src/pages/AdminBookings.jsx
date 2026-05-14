@@ -338,7 +338,11 @@ function AdminBookings() {
                                     <button className="btn btn-secondary" onClick={clearKey}>Lock</button>
                                 </div>
                                 <div className="admin-help-note">
-                                    <strong>အသုံးပြုပုံ:</strong> <span>`Auto Link` နှိပ်လျှင် Zoom link ကို အလိုအလျောက် generate + save လုပ်ပြီးသားဖြစ်သည်။ Host အဖြစ်ဝင်ရန် `Start Meeting (Host)` ကိုသုံးပါ။ Recording သည် `Complete` status ဖြစ်ပြီး `Publish Recording` နှိပ်ပြီးမှ လူနာဘက်တွင် ပေါ်မည်။</span>
+                                    <strong>အသုံးပြုပုံ:</strong>{' '}
+                                    <span>
+                                        `Auto Link` နှိပ်လျှင် Zoom link ကို အလိုအလျောက် generate + save လုပ်ပြီးသားဖြစ်သည်။ Host အဖြစ်ဝင်ရန် `Start Meeting (Host)` ကိုသုံးပါ။ Recording သည် `Complete` status ဖြစ်ပြီး `Publish Recording`
+                                        နှိပ်ပြီးမှ လူနာဘက်တွင် ပေါ်မည်။ `Auto Link` အလုပ်မလုပ်ပါက API server ဘက်တွင် Zoom credentials (`ZOOM_ACCOUNT_ID` / `ZOOM_CLIENT_ID` / `ZOOM_CLIENT_SECRET`) ထည့်ပြီး ဆာဗာကို ပြန်ဖွင့်ပါ။
+                                    </span>
                                 </div>
 
                                 {error && <div className="admin-error">{error}</div>}

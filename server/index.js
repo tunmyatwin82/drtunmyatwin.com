@@ -60,6 +60,9 @@ const hasValidAdminKey = !invalidSecretValue(ADMIN_DASHBOARD_KEY)
 const hasZoomOAuthConfig = !invalidSecretValue(ZOOM_ACCOUNT_ID) && !invalidSecretValue(ZOOM_CLIENT_ID) && !invalidSecretValue(ZOOM_CLIENT_SECRET)
 const hasZoomStaticToken = !invalidSecretValue(ZOOM_ACCESS_TOKEN)
 const hasZoomConfig = hasZoomOAuthConfig || hasZoomStaticToken
+/** Shown when admin clicks Auto Link but Zoom env is missing (same vars as startup warning). */
+const ZOOM_ENV_SETUP_MESSAGE =
+    'Zoom မချိတ်ထားသေးပါ။ hosting/server ရဲ့ environment (ဥပမာ .env) တွင် ZOOM_ACCOUNT_ID၊ ZOOM_CLIENT_ID၊ ZOOM_CLIENT_SECRET ၎င်းသုံးခု (Zoom Marketplace → Server-to-Server OAuth app) သို့မဟုတ် အချိန်ကုန်မှ ပြန်လည်ထုတ်ရသော ZOOM_ACCESS_TOKEN တစ်ခုထည့်ပြီး API server ကို ပြန်စပါ။'
 const hasGoogleOAuthConfig = !invalidSecretValue(GOOGLE_OAUTH_CLIENT_ID) && !invalidSecretValue(GOOGLE_OAUTH_CLIENT_SECRET) && !invalidSecretValue(GOOGLE_OAUTH_REDIRECT_URI) && !invalidSecretValue(GOOGLE_DRIVE_FOLDER_ID)
 const normalizeGooglePrivateKey = (rawValue = '') => {
     const raw = String(rawValue || '').trim()
@@ -263,7 +266,7 @@ const toIsoDateTime = (preferredDate, preferredTime) => {
 const getZoomAccessToken = async () => {
     if (!hasZoomOAuthConfig) {
         if (hasZoomStaticToken) return ZOOM_ACCESS_TOKEN
-        throw new Error('Zoom credentials are not configured.')
+        throw new Error(ZOOM_ENV_SETUP_MESSAGE)
     }
 
     const now = Date.now()
@@ -294,7 +297,7 @@ const getZoomAccessToken = async () => {
 
 const createZoomMeetingForBooking = async (booking) => {
     if (!hasZoomConfig) {
-        throw new Error('Zoom integration is not configured on server.')
+        throw new Error(ZOOM_ENV_SETUP_MESSAGE)
     }
 
     const accessToken = await getZoomAccessToken()
