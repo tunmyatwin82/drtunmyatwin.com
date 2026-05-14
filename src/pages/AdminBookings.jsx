@@ -3,6 +3,7 @@ import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import './AdminBookings.css'
 import { resolveBookingDisplayStatus } from '../utils/bookingStatus'
+import { openZoomLinkPreferApp } from '../utils/zoomLinks'
 
 const PAGE_SIZE = 10
 
@@ -406,6 +407,7 @@ function AdminBookings() {
                                                                             target="_blank"
                                                                             rel="noopener noreferrer"
                                                                             className="btn btn-primary btn-sm"
+                                                                            onClick={(e) => openZoomLinkPreferApp(doctorStartLink, e)}
                                                                         >
                                                                             Start Meeting (Host)
                                                                         </a>
