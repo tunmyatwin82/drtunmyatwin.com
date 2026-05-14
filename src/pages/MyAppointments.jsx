@@ -407,20 +407,19 @@ function AppointmentCard({ apt, status, formatDate, formatTime }) {
                     <div className="consultation-ready-block__header">
                         <span className="consultation-ready-block__badge">အရေးကြီး</span>
                         <h4 className="consultation-ready-block__title">
-                            🩺 မှတ်တမ်းစစ်ဆေးပြီး — Admin အတည်ပြုပြီး
+                            🩺 မှတ်တမ်းစစ်ဆေးပြီး
                         </h4>
                     </div>
 
                     <p className="consultation-ready-block__desc">
                         {currentChannel === 'zoom' ? (
                             <>
-                                မှတ်တမ်းများ စစ်ဆေးပြီးပါပြီ။ Admin ဘက်မှလည်း အတည်ပြုပြီးပါပြီ။ Zoom meeting link ပေါ်လာပါလိမ့်မည်။
-                                Link ပေါ်လာသောအခါ <strong>Zoom ဖြင့် တိုင်ပင်ရန်</strong> ခလုတ်ကို နှိပ်ပြီး တိုင်ပင်ဆွေးနွေး နိုင်ပါပြီ။
+                                Admin မှ အတည်ပြုပြီးပါက Zoom Meeting Link ပေါ်လာလိမ့်မည်။ Link ပေါ်လာသောအခါ zoom ဖြင့် တိုင်ပင်ရန် ခလုတ်ကိုနှိပ်ပြီး
+                                တိုင်ပင်ဆွေးနွေးနိုင်ပါပြီ။
                             </>
                         ) : (
                             <>
-                                မှတ်တမ်းများ စစ်ဆေးပြီးပါပြီ။ Admin ဘက်မှလည်း အတည်ပြုပြီးပါပြီ။
-                                လိုအပ်သော meeting link ပေါ်လာသောအခါ အောက်ပါတိုင်ပင်ရန် ခလုတ်ကို နှိပ်ပြီး{' '}
+                                Admin မှ အတည်ပြုပြီးပါက လိုအပ်သော meeting link ပေါ်လာလိမ့်မည်။ Link ပေါ်လာသောအခါ အောက်ပါတိုင်ပင်ရန် ခလုတ်ကို နှိပ်ပြီး{' '}
                                 <strong>{channelInfo.label}</strong> မှတစ်ဆင့် ဆွေးနွေးနိုင်ပါပြီ။
                             </>
                         )}
