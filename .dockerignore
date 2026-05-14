@@ -1,5 +1,18 @@
 node_modules
 dist
 .env
+.env.*
+!.env.example
 .env.local
 *.log
+
+.git
+.cursor
+.idea
+.vscode
+plans
+
+# Do not bake local screenshots or keys into images
+dashboard-screenshot.png
+*service-account*.json
+drtunmyatwindotcom-*.json
