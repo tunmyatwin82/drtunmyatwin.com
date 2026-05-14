@@ -366,8 +366,8 @@ function AdminBookings() {
                                             <tbody>
                                                 {rows.map((row) => (
                                                     <tr key={row.Id || row.id}>
-                                                        <td>{row.Name || '-'}</td>
-                                                        <td>{row.Phone || '-'}</td>
+                                                        <td>{row.Name || row.name || '-'}</td>
+                                                        <td>{row.Phone || row.phone || '-'}</td>
                                                         <td>{row.PreferredChannel || '-'}</td>
                                                         <td>{row.PreferredDate || '-'}</td>
                                                         <td>{row.PreferredTime || '-'}</td>

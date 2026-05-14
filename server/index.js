@@ -382,6 +382,30 @@ const updateBookingMeetingLinks = async (bookingId, joinUrl, startUrl = '') => {
     }
 }
 
+/** Same rules as AdminBookings.jsx resolveStatus, lowercased for filter comparison */
+const normalizeStatusToken = (value) => String(value || '').trim().toLowerCase().replace(/\s+/g, '_')
+
+const resolveBookingRowStatusKey = (item) => {
+    if (item.BookingStatus) return normalizeStatusToken(item.BookingStatus)
+    if (item.PaymentStatus) return normalizeStatusToken(item.PaymentStatus)
+    if (typeof item.ConsultationType === 'string' && item.ConsultationType.startsWith('status:')) {
+        return normalizeStatusToken(item.ConsultationType.replace('status:', ''))
+    }
+    if (item.PaymentScreenshot) return 'payment_submitted'
+    return 'pending_payment'
+}
+
+/** Noco/API sometimes returns different key casing; keep admin table and search consistent */
+const normalizeBookingRow = (item) => {
+    if (!item || typeof item !== 'object') return item
+    return {
+        ...item,
+        Name: item.Name || item.name || '',
+        Phone: item.Phone || item.phone || '',
+        Email: item.Email || item.email || ''
+    }
+}
+
 const requireAdmin = (req, res, next) => {
     if (!hasValidAdminKey) {
         return res.status(503).json({ error: 'Admin is not configured on this server.' })
@@ -638,18 +662,14 @@ app.get('/api/admin/bookings', requireAdmin, async (req, res) => {
         const status = String(req.query.status || '').trim().toLowerCase()
         const date = String(req.query.date || '').trim()
 
-        const data = await nocodbRequest(`/api/v2/tables/${NOCODB_BOOKING_TABLE_ID}/records?sort=-CreatedAt&limit=500`)
-        const list = data.list || []
+        const data = await nocodbRequest(`/api/v2/tables/${NOCODB_BOOKING_TABLE_ID}/records?sort=-CreatedAt&limit=2000`)
+        const list = (data.list || []).map(normalizeBookingRow)
 
         const filtered = list.filter((item) => {
-            const fallbackStatus = String(item.ConsultationType || '').startsWith('status:')
-                ? String(item.ConsultationType || '').replace('status:', '')
-                : ''
-            const rowStatus = String(item.PaymentStatus || fallbackStatus).toLowerCase()
             const rowDate = item.PreferredDate || ''
             const searchable = `${item.Name || ''} ${item.Phone || ''} ${item.Email || ''}`.toLowerCase()
 
-            const statusOk = !status || rowStatus === status
+            const statusOk = !status || resolveBookingRowStatusKey(item) === normalizeStatusToken(status)
             const dateOk = !date || rowDate === date
             const queryOk = !q || searchable.includes(q)
             return statusOk && dateOk && queryOk

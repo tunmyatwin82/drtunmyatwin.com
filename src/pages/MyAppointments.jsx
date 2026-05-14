@@ -346,7 +346,7 @@ function AppointmentCard({ apt, status, formatDate, formatTime }) {
             {/* ── HEADER (non-confirmed) ── */}
             {!isConfirmed && (
                 <div className="appointment-header">
-                    <h3 className="appointment-name">{apt.Name || 'N/A'}</h3>
+                    <h3 className="appointment-name">{apt.Name || apt.name || 'N/A'}</h3>
                     <StatusBadge status={status} />
                 </div>
             )}
@@ -359,7 +359,7 @@ function AppointmentCard({ apt, status, formatDate, formatTime }) {
                 {isConfirmed && (
                     <div className="detail-item detail-item--full">
                         <span className="detail-label">လူနာအမည်:</span>
-                        <span className="detail-value">{apt.Name || 'N/A'}</span>
+                        <span className="detail-value">{apt.Name || apt.name || 'N/A'}</span>
                     </div>
                 )}
                 <div className="detail-item">
@@ -426,7 +426,7 @@ function AppointmentCard({ apt, status, formatDate, formatTime }) {
                     <div className="consultation-info-grid">
                         <div className="consultation-info-item">
                             <span className="consultation-info-item__label">👤 လူနာအမည်</span>
-                            <span className="consultation-info-item__value">{apt.Name || 'N/A'}</span>
+                            <span className="consultation-info-item__value">{apt.Name || apt.name || 'N/A'}</span>
                         </div>
                         <div className="consultation-info-item">
                             <span className="consultation-info-item__label">🩺 တိုင်ပင်မည့်ဆရာဝန်</span>
@@ -540,7 +540,7 @@ function AppointmentCard({ apt, status, formatDate, formatTime }) {
                 <div className="appointment-actions">
                     {(status === 'pending_payment') && (
                         <Link
-                            to={`/payment-instructions?id=${apt.Id || apt.id}&name=${encodeURIComponent(apt.Name || '')}`}
+                            to={`/payment-instructions?id=${apt.Id || apt.id}&name=${encodeURIComponent(apt.Name || apt.name || '')}`}
                             className="btn btn-primary btn-sm"
                         >
                             💳 ငွေပေးချေရန်
