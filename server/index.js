@@ -105,6 +105,20 @@ const normalizeMyanmarPhone = (phone = '') => {
     return digits
 }
 
+/** Values NocoDB might store for the same Myanmar mobile (form uses +959…; manual rows often use 09… or 959…). */
+const myanmarPhoneEqVariants = (rawInput) => {
+    const normalized = normalizeMyanmarPhone(rawInput)
+    const variants = new Set()
+    variants.add(normalized)
+    const d = normalized.replace(/\D/g, '')
+    if (d.startsWith('959') && d.length >= 4) {
+        variants.add(`+${d}`)
+        variants.add(`0${d.slice(3)}`)
+        variants.add(d)
+    }
+    return [...variants].filter(Boolean)
+}
+
 app.use(cors())
 app.use(express.json({ limit: '10mb' }))
 const upload = multer({ storage: multer.memoryStorage() })
@@ -476,15 +490,45 @@ app.get('/api/bookings/search', async (req, res) => {
         const field = type === 'email' ? 'Email' : 'Phone'
         let safeValue = String(value).replace(/,/g, '').trim()
 
-        // Normalize phone number to match stored format (+959...)
         if (type === 'phone') {
-            safeValue = normalizeMyanmarPhone(safeValue)
+            const variants = myanmarPhoneEqVariants(safeValue)
+            const seen = new Set()
+            const merged = []
+            for (const v of variants) {
+                const encoded = encodeURIComponent(v)
+                const data = await nocodbRequest(
+                    `/api/v2/tables/${NOCODB_BOOKING_TABLE_ID}/records?where=(${field},eq,${encoded})&sort=-CreatedAt`
+                )
+                for (const row of data.list || []) {
+                    const id = row?.Id ?? row?.id
+                    if (id != null && !seen.has(id)) {
+                        seen.add(id)
+                        merged.push(row)
+                    }
+                }
+            }
+            merged.sort((a, b) => {
+                const ta = new Date(a.CreatedAt || a.created_at || 0).getTime()
+                const tb = new Date(b.CreatedAt || b.created_at || 0).getTime()
+                return tb - ta
+            })
+            return res.json(merged)
         }
 
-        // URL-encode the value so special chars like + are handled correctly
-        const encodedValue = encodeURIComponent(safeValue)
-        const data = await nocodbRequest(`/api/v2/tables/${NOCODB_BOOKING_TABLE_ID}/records?where=(${field},eq,${encodedValue})&sort=-CreatedAt`)
-        res.json(data.list || [])
+        safeValue = safeValue.toLowerCase()
+        const encodedLower = encodeURIComponent(safeValue)
+        let data = await nocodbRequest(
+            `/api/v2/tables/${NOCODB_BOOKING_TABLE_ID}/records?where=(${field},eq,${encodedLower})&sort=-CreatedAt`
+        )
+        let list = data.list || []
+        if (list.length === 0 && String(value).trim() !== safeValue) {
+            const encodedOriginal = encodeURIComponent(String(value).replace(/,/g, '').trim())
+            data = await nocodbRequest(
+                `/api/v2/tables/${NOCODB_BOOKING_TABLE_ID}/records?where=(${field},eq,${encodedOriginal})&sort=-CreatedAt`
+            )
+            list = data.list || []
+        }
+        res.json(list)
     } catch (error) {
         res.status(500).json({ error: error.message })
     }
@@ -662,7 +706,8 @@ app.get('/api/admin/bookings', requireAdmin, async (req, res) => {
         const status = String(req.query.status || '').trim().toLowerCase()
         const date = String(req.query.date || '').trim()
 
-        const data = await nocodbRequest(`/api/v2/tables/${NOCODB_BOOKING_TABLE_ID}/records?sort=-CreatedAt&limit=2000`)
+        // Prefer Id so manually inserted rows without CreatedAt are not dropped from the first page/window.
+        const data = await nocodbRequest(`/api/v2/tables/${NOCODB_BOOKING_TABLE_ID}/records?sort=-Id&limit=2000`)
         const list = (data.list || []).map(normalizeBookingRow)
 
         const filtered = list.filter((item) => {
