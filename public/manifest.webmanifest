@@ -1,0 +1,25 @@
+{
+  "name": "Dr Tun Myat Win Health App",
+  "short_name": "DrTunMyatWin",
+  "description": "Online consultation and health resources by Dr Tun Myat Win.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0b1220",
+  "theme_color": "#0b1220",
+  "lang": "my",
+  "icons": [
+    {
+      "src": "/ebook-cover.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/ebook-cover.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
