@@ -2,6 +2,12 @@
  * Open Zoom in the desktop/mobile app (zoommtg://) instead of the web client only.
  */
 
+function isLinuxDesktop() {
+    if (typeof navigator === 'undefined') return false
+    const ua = navigator.userAgent || ''
+    return /Linux/i.test(ua) && !/Android/i.test(ua)
+}
+
 /**
  * Collapse regional / long zoommtg URLs to zoom.us + minimal query (better OS handler compatibility).
  */
@@ -130,10 +136,9 @@ function invokeZoomNativeApp(appUrl) {
 }
 
 /**
- * Prefer native Zoom app first (zoommtg://), then HTTPS web client only if the app likely did not open.
- * Skips web when the tab is hidden (e.g. mobile app handoff) or the page unloads.
- * Does not navigate host **start** pages in the browser as fallback — Zoom's web app launches
- * zoommtg from an iframe without a gesture and triggers Chromium errors.
+ * On Linux desktop browsers, `zoommtg://` is often blocked from web pages; open the official
+ * Zoom HTTPS page in a new tab so the user can click Zoom's own "Launch Meeting" (valid gesture).
+ * Other platforms: try zoommtg first, then HTTPS fallback where allowed.
  * Ctrl/Cmd-click still uses the default HTTPS href (new tab).
  * @returns {boolean} true if default was prevented
  */
@@ -144,6 +149,16 @@ export function openZoomLinkPreferApp(httpsUrl, event) {
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) {
         return false
     }
+
+    if (isLinuxDesktop()) {
+        event.preventDefault()
+        const w = window.open(web, '_blank', 'noopener,noreferrer')
+        if (!w) {
+            window.location.assign(web)
+        }
+        return true
+    }
+
     event.preventDefault()
 
     let skipWebFallback = false

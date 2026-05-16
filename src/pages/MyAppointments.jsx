@@ -4,7 +4,7 @@ import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import './MyAppointments.css'
 import { resolveBookingDisplayStatus } from '../utils/bookingStatus'
-import { openZoomLinkPreferApp, zoomHttpsToAppDeepLink } from '../utils/zoomLinks'
+import { openZoomLinkPreferApp } from '../utils/zoomLinks'
 
 const CHANNEL_INFO = {
     telegram: { label: 'Telegram', icon: '✈️', color: '#2aabee', bg: 'rgba(42,171,238,0.1)', border: 'rgba(42,171,238,0.3)' },
@@ -356,7 +356,6 @@ function AppointmentCard({ apt, status, formatDate, formatTime }) {
         selectedChannel,
         selectedChannel === currentChannel
     )
-    const consultZoomAppHref = channelAction ? zoomHttpsToAppDeepLink(channelAction.href) : null
     const channelInfo = getChannelInfo(currentChannel)
 
     const updateChannel = async (nextChannel) => {
@@ -579,9 +578,9 @@ function AppointmentCard({ apt, status, formatDate, formatTime }) {
 
                     {channelAction ? (
                         <a
-                            href={consultZoomAppHref || channelAction.href}
-                            target={consultZoomAppHref ? undefined : '_blank'}
-                            rel={consultZoomAppHref ? undefined : 'noopener noreferrer'}
+                            href={channelAction.href}
+                            target="_blank"
+                            rel="noopener noreferrer"
                             className="btn btn-primary btn-next-step"
                             onClick={(e) => openZoomLinkPreferApp(channelAction.href, e)}
                         >
