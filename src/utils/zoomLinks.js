@@ -130,8 +130,9 @@ function invokeZoomNativeApp(appUrl) {
 }
 
 /**
- * Prefer native Zoom app first (`zoommtg://` via same-document navigation), then HTTPS fallback.
- * Host start pages are not used as automatic fallback (Zoom's web app triggers iframe `zoommtg` errors).
+ * Prefer native Zoom app (`zoommtg://`) for join links; host **start** URLs open HTTPS in a new tab
+ * because browsers rarely launch zoommtg reliably for `/s/` host flows from the SPA.
+ * Join URLs still use zoommtg + HTTPS fallback.
  * Ctrl/Cmd-click still uses the default HTTPS href (new tab).
  * @returns {boolean} true if default was prevented
  */
@@ -141,6 +142,15 @@ export function openZoomLinkPreferApp(httpsUrl, event) {
     if (!app) return false
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) {
         return false
+    }
+
+    if (isZoomHostStartUrl(web)) {
+        event.preventDefault()
+        const w = window.open(web, '_blank', 'noopener,noreferrer')
+        if (!w) {
+            window.location.assign(web)
+        }
+        return true
     }
 
     event.preventDefault()

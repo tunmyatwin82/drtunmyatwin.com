@@ -151,6 +151,11 @@ const phonesMatchForSearch = (stored, queryRaw) => {
 
 app.use(cors())
 app.use(express.json({ limit: '10mb' }))
+/** Patient/admin dashboards must never reuse stale JSON from disk cache after refresh. */
+app.use('/api', (req, res, next) => {
+    res.set('Cache-Control', 'private, no-store, must-revalidate')
+    next()
+})
 const upload = multer({ storage: multer.memoryStorage() })
 
 const nocodbRequest = async (path, options = {}) => {
@@ -979,6 +984,7 @@ if (existsSync(distPath)) {
     app.use(express.static(distPath))
     // Express 5 no longer accepts string "*" path patterns.
     app.get(/.*/, (_req, res) => {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate')
         res.sendFile(join(distPath, 'index.html'))
     })
 }

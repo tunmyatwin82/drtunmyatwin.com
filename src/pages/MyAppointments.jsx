@@ -34,6 +34,17 @@ const writeChannelOverride = (bookingId, channel) => {
     localStorage.setItem(CHANNEL_OVERRIDE_KEY, JSON.stringify(current))
 }
 
+/** Newest booking first (CreatedAt then Id) — avoids stale ordering after merges/refreshes. */
+const sortBookingsNewestFirst = (rows) =>
+    [...(rows || [])].sort((a, b) => {
+        const ta = new Date(a.CreatedAt ?? a.created_at ?? 0).getTime()
+        const tb = new Date(b.CreatedAt ?? b.created_at ?? 0).getTime()
+        if (tb !== ta) return tb - ta
+        const ida = Number(a.Id ?? a.id ?? 0)
+        const idb = Number(b.Id ?? b.id ?? 0)
+        return idb - ida
+    })
+
 function ChannelBlock({ channel }) {
     const info = getChannelInfo(channel)
     return (
@@ -119,17 +130,20 @@ function MyAppointments() {
             return
         }
         const t = type === 'email' ? 'email' : 'phone'
+        lastSearchRef.current = { type: t, value }
         if (!silent) setIsSearching(true)
         setHasSearched(true)
         try {
             const params = new URLSearchParams({ type: t, value })
-            const res = await fetch(`/api/bookings/search?${params}`)
+            const res = await fetch(`/api/bookings/search?${params}`, {
+                cache: 'no-store',
+                headers: { Accept: 'application/json' }
+            })
             if (!res.ok) throw new Error('Failed')
             const data = await res.json()
-            setAppointments(data || [])
+            setAppointments(sortBookingsNewestFirst(data))
             try {
                 localStorage.setItem(MY_APPOINTMENTS_SEARCH_KEY, JSON.stringify({ type: t, value }))
-                lastSearchRef.current = { type: t, value }
             } catch {
                 /* quota / private mode */
             }
@@ -194,6 +208,26 @@ function MyAppointments() {
         }
         document.addEventListener('visibilitychange', onVis)
         return () => document.removeEventListener('visibilitychange', onVis)
+    }, [runSearchWithParams])
+
+    /** BFCache / history restores — always merge saved search from storage so lists refresh without hard reload */
+    useEffect(() => {
+        const onPageShow = () => {
+            try {
+                const raw = localStorage.getItem(MY_APPOINTMENTS_SEARCH_KEY)
+                if (!raw) return
+                const parsed = JSON.parse(raw)
+                const t = parsed.type === 'email' ? 'email' : 'phone'
+                const v = String(parsed.value || '').trim()
+                if (!v) return
+                lastSearchRef.current = { type: t, value }
+                runSearchWithParams(t, v, { silent: true })
+            } catch {
+                /* ignore */
+            }
+        }
+        window.addEventListener('pageshow', onPageShow)
+        return () => window.removeEventListener('pageshow', onPageShow)
     }, [runSearchWithParams])
 
     const resolveStatus = resolveBookingDisplayStatus

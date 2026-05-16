@@ -93,6 +93,7 @@ function AdminBookings() {
             const url = `/api/admin/bookings?${params.toString()}`
             console.log('[Admin] Fetching:', url)
             const response = await fetch(url, {
+                cache: 'no-store',
                 headers: { 'x-admin-key': adminKey }
             })
             console.log('[Admin] Response status:', response.status)
