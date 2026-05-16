@@ -14,5 +14,10 @@ if command -v flatpak >/dev/null 2>&1 && flatpak list --app 2>/dev/null | grep -
 fi
 
 echo "Installing Zoom from $DEB (needs sudo password)..."
-sudo dpkg -i "$DEB" || sudo apt-get install -f -y
-echo "Done. Try: zoom &"
+sudo apt-get update -qq
+sudo dpkg -i "$DEB" || true
+sudo apt-get install -f -y
+# Required by Zoom .deb; if missing, /opt/zoom/zoom exits 127 (seen on incomplete dpkg run)
+sudo apt-get install -y libxcb-cursor0 libxcb-xtest0
+sudo dpkg --configure -a
+echo "Done. Test: zoom &"
