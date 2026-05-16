@@ -47,6 +47,26 @@ export function zoomHttpsToAppDeepLink(httpsUrl) {
 }
 
 /**
+ * Host start links (`/s/...` or zoommtg `.../start`) must not be used as a web fallback:
+ * Zoom's web client loads iframes that try `zoommtg://` without a user gesture → Chromium error.
+ */
+function isZoomHostStartUrl(raw) {
+    const s = String(raw || '').trim()
+    if (!s) return false
+    if (/^zoommtg:/i.test(s)) {
+        return /\/start\b/i.test(s) || /[?&]action=start\b/i.test(s)
+    }
+    try {
+        const u = new URL(s)
+        const host = u.hostname.toLowerCase()
+        if (host !== 'zoom.us' && !host.endsWith('.zoom.us')) return false
+        return /\/s\/\d{5,15}/i.test(u.pathname)
+    } catch {
+        return false
+    }
+}
+
+/**
  * Launch Zoom via zoommtg:// using one programmatic anchor click in the same stack as the
  * real user click. Chromium blocks iframe / window.open / repeated protocol launches:
  * "Not allowed to launch ... because a user gesture is required."
@@ -56,7 +76,6 @@ function invokeZoomNativeApp(appUrl) {
     try {
         const a = document.createElement('a')
         a.setAttribute('href', appUrl)
-        a.setAttribute('rel', 'noopener noreferrer')
         a.setAttribute('aria-hidden', 'true')
         a.style.cssText = 'position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden'
         document.body.appendChild(a)
@@ -71,7 +90,8 @@ function invokeZoomNativeApp(appUrl) {
 /**
  * Prefer native Zoom app first (zoommtg://), then HTTPS web client only if the app likely did not open.
  * Skips web when the tab is hidden (e.g. mobile app handoff) or the page unloads.
- * Does not listen to `blur` — on Linux/desktop it often fires without the Zoom app opening and blocks web fallback.
+ * Does not navigate host **start** pages in the browser as fallback — Zoom's web app launches
+ * zoommtg from an iframe without a gesture and triggers Chromium errors.
  * Ctrl/Cmd-click still uses the default HTTPS href (new tab).
  * @returns {boolean} true if default was prevented
  */
@@ -110,6 +130,9 @@ export function openZoomLinkPreferApp(httpsUrl, event) {
         }
 
         if (!skipWebFallback) {
+            if (isZoomHostStartUrl(web)) {
+                return
+            }
             window.location.assign(web)
         }
     }, fallbackMs)
