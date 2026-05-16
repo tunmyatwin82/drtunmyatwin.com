@@ -47,10 +47,14 @@ export function zoomHttpsToAppDeepLink(httpsUrl) {
 
 /**
  * Prefer native Zoom app via hidden iframe (avoids navigating the whole tab away from the site).
+ * If the app does not open (or is not installed), navigates this tab to the HTTPS meeting URL so the
+ * Zoom web client can join (no extra popup; reliable when the app is missing).
+ * If the window loses focus or the page is hidden (likely switched to Zoom app), skips web redirect.
  * Ctrl/Cmd-click still uses the default HTTPS href (new tab).
  * @returns {boolean} true if default was prevented
  */
 export function openZoomLinkPreferApp(httpsUrl, event) {
+    const web = String(httpsUrl || '').trim()
     const app = zoomHttpsToAppDeepLink(httpsUrl)
     if (!app) return false
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) {
@@ -58,17 +62,39 @@ export function openZoomLinkPreferApp(httpsUrl, event) {
     }
     event.preventDefault()
 
+    /** Likely left for the Zoom app or another surface — avoid also loading the web client. */
+    let skipWebFallback = false
+    const markLikelyLeft = () => {
+        skipWebFallback = true
+    }
+    window.addEventListener('blur', markLikelyLeft, { passive: true })
+    window.addEventListener('pagehide', markLikelyLeft, { passive: true })
+    const onVisibility = () => {
+        if (document.visibilityState === 'hidden') markLikelyLeft()
+    }
+    document.addEventListener('visibilitychange', onVisibility, { passive: true })
+
     const iframe = document.createElement('iframe')
     iframe.style.cssText = 'display:none;width:0;height:0;border:0;position:absolute;left:-9999px'
     iframe.setAttribute('aria-hidden', 'true')
     document.body.appendChild(iframe)
     iframe.src = app
+
+    const fallbackMs = 2500
     window.setTimeout(() => {
+        window.removeEventListener('blur', markLikelyLeft)
+        window.removeEventListener('pagehide', markLikelyLeft)
+        document.removeEventListener('visibilitychange', onVisibility)
         try {
             iframe.remove()
         } catch {
             /* ignore */
         }
-    }, 4000)
+
+        if (!skipWebFallback) {
+            window.location.assign(web)
+        }
+    }, fallbackMs)
+
     return true
 }

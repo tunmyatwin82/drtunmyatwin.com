@@ -492,7 +492,7 @@ function AppointmentCard({ apt, status, formatDate, formatTime }) {
                         {currentChannel === 'zoom' ? (
                             <>
                                 Admin မှ အတည်ပြုပြီးပါက Zoom Meeting Link ပေါ်လာလိမ့်မည်။ Link ပေါ်လာသောအခါ zoom ဖြင့် တိုင်ပင်ရန် ခလုတ်ကိုနှိပ်ပြီး
-                                တိုင်ပင်ဆွေးနွေးနိုင်ပါပြီ။
+                                တိုင်ပင်ဆွေးနွေးနိုင်ပါပြီ။ Zoom app မထည့်ရသေးရင် နှိပ်ပြီးအနည်းငယ်ကြာလျှင် ဘရောက်ဇာမှ Zoom Web ဝင်ကြည့်နိုင်ပါသည်။
                             </>
                         ) : (
                             <>
