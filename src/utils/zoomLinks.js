@@ -3,13 +3,53 @@
  */
 
 /**
+ * Collapse regional / long zoommtg URLs to zoom.us + minimal query (better OS handler compatibility).
+ */
+function normalizeZoomMtgToCanonical(raw) {
+    let u
+    try {
+        u = new URL(raw)
+    } catch {
+        return raw
+    }
+    if (!/^zoommtg:$/i.test(u.protocol)) return raw
+
+    const host = u.hostname.toLowerCase()
+    if (host !== 'zoom.us' && !host.endsWith('.zoom.us')) return raw
+
+    const sp = u.searchParams
+    const confno = sp.get('confno') || ''
+    const pwd = sp.get('pwd') || ''
+    const zak = sp.get('zak') || ''
+    const action = (sp.get('action') || '').toLowerCase()
+    const path = (u.pathname || '').toLowerCase()
+
+    if (path.includes('start') || action === 'start') {
+        const q = new URLSearchParams()
+        if (confno) q.set('confno', confno)
+        if (pwd) q.set('pwd', pwd)
+        if (zak) q.set('zak', zak)
+        return `zoommtg://zoom.us/start?${q.toString()}`
+    }
+
+    if (path.includes('join') || action === 'join') {
+        const q = new URLSearchParams()
+        if (confno) q.set('confno', confno)
+        if (pwd) q.set('pwd', pwd)
+        return `zoommtg://zoom.us/join?${q.toString()}`
+    }
+
+    return raw
+}
+
+/**
  * @param {string} httpsUrl
  * @returns {string | null} zoommtg URL or null if not a supported Zoom HTTPS meeting link
  */
 export function zoomHttpsToAppDeepLink(httpsUrl) {
     const web = String(httpsUrl || '').trim()
     if (!web) return null
-    if (/^zoommtg:/i.test(web)) return web
+    if (/^zoommtg:/i.test(web)) return normalizeZoomMtgToCanonical(web)
 
     let u
     try {
@@ -67,22 +107,24 @@ function isZoomHostStartUrl(raw) {
 }
 
 /**
- * Launch Zoom via zoommtg:// using one programmatic anchor click in the same stack as the
- * real user click. Chromium blocks iframe / window.open / repeated protocol launches:
- * "Not allowed to launch ... because a user gesture is required."
- * @returns {HTMLIFrameElement[]} empty — retained for cleanup loop compatibility
+ * Prefer top-level navigation to zoommtg:// — Chromium/Linux often only hands off the protocol
+ * reliably this way; programmatic .click() on a synthetic anchor may not activate the handler.
  */
 function invokeZoomNativeApp(appUrl) {
     try {
-        const a = document.createElement('a')
-        a.setAttribute('href', appUrl)
-        a.setAttribute('aria-hidden', 'true')
-        a.style.cssText = 'position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden'
-        document.body.appendChild(a)
-        a.click()
-        document.body.removeChild(a)
+        window.location.assign(appUrl)
     } catch {
-        /* ignore */
+        try {
+            const a = document.createElement('a')
+            a.setAttribute('href', appUrl)
+            a.setAttribute('aria-hidden', 'true')
+            a.style.cssText = 'position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden'
+            document.body.appendChild(a)
+            a.click()
+            document.body.removeChild(a)
+        } catch {
+            /* ignore */
+        }
     }
     return []
 }

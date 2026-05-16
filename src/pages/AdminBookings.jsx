@@ -3,7 +3,7 @@ import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import './AdminBookings.css'
 import { resolveBookingDisplayStatus } from '../utils/bookingStatus'
-import { openZoomLinkPreferApp } from '../utils/zoomLinks'
+import { openZoomLinkPreferApp, zoomHttpsToAppDeepLink } from '../utils/zoomLinks'
 
 const PAGE_SIZE = 10
 
@@ -402,15 +402,20 @@ function AdminBookings() {
                                                                 </div>
                                                                 {doctorStartLink && (
                                                                     <div className="meeting-link-open-actions">
+                                                                        {(() => {
+                                                                            const zoomApp = zoomHttpsToAppDeepLink(doctorStartLink)
+                                                                            return (
                                                                         <a
-                                                                            href={doctorStartLink}
-                                                                            target="_blank"
-                                                                            rel="noopener noreferrer"
+                                                                            href={zoomApp || doctorStartLink}
+                                                                            target={zoomApp ? undefined : '_blank'}
+                                                                            rel={zoomApp ? undefined : 'noopener noreferrer'}
                                                                             className="btn btn-primary btn-sm"
                                                                             onClick={(e) => openZoomLinkPreferApp(doctorStartLink, e)}
                                                                         >
                                                                             Start Meeting (Host)
                                                                         </a>
+                                                                            )
+                                                                        })()}
                                                                     </div>
                                                                 )}
                                                             </div>
