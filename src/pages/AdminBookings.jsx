@@ -88,13 +88,18 @@ function AdminBookings() {
                 pageSize: String(PAGE_SIZE),
                 q,
                 status,
-                date
+                date,
+                _: String(Date.now())
             })
             const url = `/api/admin/bookings?${params.toString()}`
             console.log('[Admin] Fetching:', url)
             const response = await fetch(url, {
                 cache: 'no-store',
-                headers: { 'x-admin-key': adminKey }
+                headers: {
+                    'x-admin-key': adminKey,
+                    'Cache-Control': 'no-cache',
+                    Pragma: 'no-cache'
+                }
             })
             console.log('[Admin] Response status:', response.status)
 

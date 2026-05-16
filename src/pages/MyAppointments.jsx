@@ -135,9 +135,14 @@ function MyAppointments() {
         setHasSearched(true)
         try {
             const params = new URLSearchParams({ type: t, value })
+            params.set('_', String(Date.now()))
             const res = await fetch(`/api/bookings/search?${params}`, {
                 cache: 'no-store',
-                headers: { Accept: 'application/json' }
+                headers: {
+                    Accept: 'application/json',
+                    'Cache-Control': 'no-cache',
+                    Pragma: 'no-cache'
+                }
             })
             if (!res.ok) throw new Error('Failed')
             const data = await res.json()

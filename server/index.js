@@ -153,7 +153,11 @@ app.use(cors())
 app.use(express.json({ limit: '10mb' }))
 /** Patient/admin dashboards must never reuse stale JSON from disk cache after refresh. */
 app.use('/api', (req, res, next) => {
-    res.set('Cache-Control', 'private, no-store, must-revalidate')
+    res.set({
+        'Cache-Control': 'private, no-store, no-cache, max-age=0, must-revalidate',
+        Pragma: 'no-cache',
+        Expires: '0'
+    })
     next()
 })
 const upload = multer({ storage: multer.memoryStorage() })
@@ -163,11 +167,21 @@ const nocodbRequest = async (path, options = {}) => {
         throw new Error('Server is missing a valid NOCODB_API_TOKEN.')
     }
 
-    const response = await fetch(`${NOCODB_API_URL}${path}`, {
+    const method = String(options.method || 'GET').toUpperCase()
+    /** Bypass accidental HTTP caches (CDN/browser) on read-heavy GETs toward NocoDB. */
+    let reqPath = path
+    if (method === 'GET' && !path.includes('_nc=')) {
+        const sep = path.includes('?') ? '&' : '?'
+        reqPath = `${path}${sep}_nc=${Date.now()}`
+    }
+
+    const response = await fetch(`${NOCODB_API_URL}${reqPath}`, {
         ...options,
         headers: {
             'Content-Type': 'application/json',
             'xc-token': NOCODB_API_TOKEN,
+            'Cache-Control': 'no-cache',
+            Pragma: 'no-cache',
             ...(options.headers || {})
         }
     })
@@ -455,6 +469,15 @@ const normalizeBookingRow = (item) => {
     }
 }
 
+/** Prefer CreatedAt when set; tie-break with Id for stable “newest first” after plain refresh. */
+const sortRowsNewestFirst = (rows) =>
+    [...(rows || [])].sort((a, b) => {
+        const ta = new Date(a.CreatedAt ?? a.created_at ?? 0).getTime()
+        const tb = new Date(b.CreatedAt ?? b.created_at ?? 0).getTime()
+        if (tb !== ta) return tb - ta
+        return Number(b.Id ?? b.id ?? 0) - Number(a.Id ?? a.id ?? 0)
+    })
+
 const requireAdmin = (req, res, next) => {
     if (!hasValidAdminKey) {
         return res.status(503).json({ error: 'Admin is not configured on this server.' })
@@ -541,7 +564,7 @@ app.get('/api/bookings/search', async (req, res) => {
             for (const v of myanmarPhoneEqVariants(safeValue)) {
                 const encoded = encodeURIComponent(v)
                 const data = await nocodbRequest(
-                    `/api/v2/tables/${NOCODB_BOOKING_TABLE_ID}/records?where=(${field},eq,${encoded})&sort=-CreatedAt`
+                    `/api/v2/tables/${NOCODB_BOOKING_TABLE_ID}/records?where=(${field},eq,${encoded})&sort=-Id`
                 )
                 pushRows(data.list)
             }
@@ -553,7 +576,7 @@ app.get('/api/bookings/search', async (req, res) => {
                     const encoded = encodeURIComponent(core)
                     try {
                         const data = await nocodbRequest(
-                            `/api/v2/tables/${NOCODB_BOOKING_TABLE_ID}/records?where=(${field},like,${encoded})&limit=200&sort=-CreatedAt`
+                            `/api/v2/tables/${NOCODB_BOOKING_TABLE_ID}/records?where=(${field},like,${encoded})&limit=200&sort=-Id`
                         )
                         const filtered = (data.list || []).filter((row) =>
                             phonesMatchForSearch(row.Phone || row.phone, safeValue)
@@ -565,28 +588,23 @@ app.get('/api/bookings/search', async (req, res) => {
                 }
             }
 
-            merged.sort((a, b) => {
-                const ta = new Date(a.CreatedAt || a.created_at || 0).getTime()
-                const tb = new Date(b.CreatedAt || b.created_at || 0).getTime()
-                return tb - ta
-            })
-            return res.json(merged)
+            return res.json(sortRowsNewestFirst(merged))
         }
 
         safeValue = safeValue.toLowerCase()
         const encodedLower = encodeURIComponent(safeValue)
         let data = await nocodbRequest(
-            `/api/v2/tables/${NOCODB_BOOKING_TABLE_ID}/records?where=(${field},eq,${encodedLower})&sort=-CreatedAt`
+            `/api/v2/tables/${NOCODB_BOOKING_TABLE_ID}/records?where=(${field},eq,${encodedLower})&sort=-Id`
         )
         let list = data.list || []
         if (list.length === 0 && String(value).trim() !== safeValue) {
             const encodedOriginal = encodeURIComponent(String(value).replace(/,/g, '').trim())
             data = await nocodbRequest(
-                `/api/v2/tables/${NOCODB_BOOKING_TABLE_ID}/records?where=(${field},eq,${encodedOriginal})&sort=-CreatedAt`
+                `/api/v2/tables/${NOCODB_BOOKING_TABLE_ID}/records?where=(${field},eq,${encodedOriginal})&sort=-Id`
             )
             list = data.list || []
         }
-        res.json(list)
+        res.json(sortRowsNewestFirst(list))
     } catch (error) {
         res.status(500).json({ error: error.message })
     }
@@ -765,7 +783,7 @@ app.get('/api/admin/bookings', requireAdmin, async (req, res) => {
         const date = String(req.query.date || '').trim()
 
         // Prefer Id so manually inserted rows without CreatedAt are not dropped from the first page/window.
-        const data = await nocodbRequest(`/api/v2/tables/${NOCODB_BOOKING_TABLE_ID}/records?sort=-Id&limit=2000`)
+        const data = await nocodbRequest(`/api/v2/tables/${NOCODB_BOOKING_TABLE_ID}/records?sort=-Id&limit=5000`)
         const list = (data.list || []).map(normalizeBookingRow)
 
         const filtered = list.filter((item) => {
