@@ -97,6 +97,115 @@
     max-width: 520px;
 }
 
+/* Homepage LIVE + social proof — fixed top-right, clearly below navbar (stack under nav: z-index < 1000) */
+.live-corner-widget {
+    position: fixed;
+    top: calc(env(safe-area-inset-top, 0px) + 6.35rem);
+    right: max(0.75rem, env(safe-area-inset-right, 0px));
+    z-index: 980;
+    max-width: min(340px, calc(100vw - 1.5rem));
+    padding: 0.72rem 0.95rem;
+    border-radius: var(--radius-lg);
+    margin: 0;
+}
+
+.live-corner-widget__row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: nowrap;
+}
+
+.live-corner-widget__live {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-family: var(--font-en);
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    color: #fca5a5;
+}
+
+.live-corner-widget__dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #22c55e;
+    box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.35);
+    animation: hero-live-pulse 2s ease-in-out infinite;
+}
+
+@keyframes hero-live-pulse {
+    0%,
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.85;
+        transform: scale(1.15);
+    }
+}
+
+.live-corner-widget__live-text {
+    font-size: var(--font-size-base);
+    font-weight: 600;
+    color: var(--text-secondary);
+    line-height: 1.45;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.live-corner-widget__count {
+    color: var(--accent-400);
+    font-variant-numeric: tabular-nums;
+    font-size: 1.05em;
+    font-weight: 800;
+}
+
+.live-corner-widget__milestone {
+    margin: 0.65rem 0 0;
+    padding-top: 0.65rem;
+    border-top: 1px solid var(--border-glass);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    color: var(--text-muted);
+    line-height: 1.55;
+}
+
+.live-corner-widget__milestone strong {
+    color: var(--text-primary);
+    font-weight: 700;
+}
+
+@media (max-width: 768px) {
+    .live-corner-widget {
+        top: calc(env(safe-area-inset-top, 0px) + 8.65rem);
+        right: max(0.5rem, env(safe-area-inset-right, 0px));
+        left: auto;
+        max-width: min(300px, calc(100vw - 4rem));
+        padding: 0.62rem 0.78rem;
+    }
+
+    .live-corner-widget__live {
+        font-size: 0.72rem;
+    }
+
+    .live-corner-widget__live-text {
+        white-space: normal;
+        font-size: calc(var(--font-size-base) * 1.02);
+        overflow: visible;
+        text-overflow: unset;
+    }
+
+    .live-corner-widget__milestone {
+        font-size: calc(var(--font-size-sm) * 1.05);
+    }
+}
+
 .hero__cta-group {
     display: flex;
     flex-direction: column;

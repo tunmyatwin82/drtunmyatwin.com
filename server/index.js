@@ -489,6 +489,42 @@ const requireAdmin = (req, res, next) => {
     return next()
 }
 
+/** Opaque browser-generated IDs → last heartbeat (ms). Single-instance counter for homepage social proof. */
+const VISITOR_PRESENCE_TTL_MS = 110_000
+const visitorPresenceById = new Map()
+
+const pruneStaleVisitors = () => {
+    const now = Date.now()
+    for (const [id, lastSeen] of visitorPresenceById) {
+        if (now - lastSeen > VISITOR_PRESENCE_TTL_MS) visitorPresenceById.delete(id)
+    }
+}
+
+const clampPresenceVisitorId = (raw) => {
+    const id = String(raw ?? '').trim()
+    if (!id || id.length < 8 || id.length > 128) return ''
+    return id
+}
+
+app.post('/api/presence/ping', (req, res) => {
+    try {
+        const visitorId = clampPresenceVisitorId(req.body?.visitorId)
+        if (!visitorId) {
+            return res.status(400).json({ error: 'visitorId required' })
+        }
+        pruneStaleVisitors()
+        visitorPresenceById.set(visitorId, Date.now())
+        res.json({ ok: true, activeVisitors: visitorPresenceById.size })
+    } catch {
+        res.status(500).json({ error: 'presence_failed' })
+    }
+})
+
+app.get('/api/presence/active', (_req, res) => {
+    pruneStaleVisitors()
+    res.json({ activeVisitors: visitorPresenceById.size })
+})
+
 app.get('/api/health', (_req, res) => {
     res.json({ ok: true })
 })

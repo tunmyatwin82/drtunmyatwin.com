@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import Navbar from '../components/Navbar'
+import LandingSocialProof from '../components/LandingSocialProof'
 import LeadForm from '../components/LeadForm'
 import Footer from '../components/Footer'
 import BookingForm from '../components/BookingForm'
@@ -58,6 +59,7 @@ function LandingPage() {
     return (
         <div className="landing-page">
             <Navbar />
+            <LandingSocialProof />
             <div className="mobile-quick-nav">
                 <button type="button" className="mobile-quick-nav__btn mobile-quick-nav__btn--primary" onClick={scrollToConsultation}>
                     🩺 ချိန်းဆိုရန်
