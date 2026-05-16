@@ -46,9 +46,32 @@ export function zoomHttpsToAppDeepLink(httpsUrl) {
 }
 
 /**
- * Prefer native Zoom app via hidden iframe (avoids navigating the whole tab away from the site).
- * If the app does not open (or is not installed), navigates this tab to the HTTPS meeting URL so the
- * Zoom web client can join (no extra popup; reliable when the app is missing).
+ * Launch Zoom desktop/mobile via protocol handler (best inside the same user gesture).
+ * Anchor + iframe covers most Chromium / Firefox / Safari quirks.
+ */
+function invokeZoomNativeApp(appUrl) {
+    try {
+        const a = document.createElement('a')
+        a.setAttribute('href', appUrl)
+        a.setAttribute('aria-hidden', 'true')
+        a.style.cssText = 'position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden'
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+    } catch {
+        /* continue to iframe */
+    }
+
+    const iframe = document.createElement('iframe')
+    iframe.style.cssText = 'display:none;width:0;height:0;border:0;position:absolute;left:-9999px'
+    iframe.setAttribute('aria-hidden', 'true')
+    document.body.appendChild(iframe)
+    iframe.src = appUrl
+    return iframe
+}
+
+/**
+ * Prefer native Zoom app first (zoommtg://), then HTTPS web client only if the app likely did not open.
  * If the window loses focus or the page is hidden (likely switched to Zoom app), skips web redirect.
  * Ctrl/Cmd-click still uses the default HTTPS href (new tab).
  * @returns {boolean} true if default was prevented
@@ -74,13 +97,10 @@ export function openZoomLinkPreferApp(httpsUrl, event) {
     }
     document.addEventListener('visibilitychange', onVisibility, { passive: true })
 
-    const iframe = document.createElement('iframe')
-    iframe.style.cssText = 'display:none;width:0;height:0;border:0;position:absolute;left:-9999px'
-    iframe.setAttribute('aria-hidden', 'true')
-    document.body.appendChild(iframe)
-    iframe.src = app
+    const iframe = invokeZoomNativeApp(app)
 
-    const fallbackMs = 2500
+    /** Longer wait so the local Zoom app can start before offering the web client. */
+    const fallbackMs = 4500
     window.setTimeout(() => {
         window.removeEventListener('blur', markLikelyLeft)
         window.removeEventListener('pagehide', markLikelyLeft)
