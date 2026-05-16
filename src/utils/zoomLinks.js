@@ -47,82 +47,25 @@ export function zoomHttpsToAppDeepLink(httpsUrl) {
 }
 
 /**
- * Alternate deep link some Zoom builds accept (with explicit action).
- * @param {string} httpsUrl
- * @returns {string | null}
+ * Launch Zoom via zoommtg:// using one programmatic anchor click in the same stack as the
+ * real user click. Chromium blocks iframe / window.open / repeated protocol launches:
+ * "Not allowed to launch ... because a user gesture is required."
+ * @returns {HTMLIFrameElement[]} empty — retained for cleanup loop compatibility
  */
-function zoomHttpsToAppDeepLinkWithAction(httpsUrl) {
-    let u
+function invokeZoomNativeApp(appUrl) {
     try {
-        u = new URL(String(httpsUrl || '').trim())
+        const a = document.createElement('a')
+        a.setAttribute('href', appUrl)
+        a.setAttribute('rel', 'noopener noreferrer')
+        a.setAttribute('aria-hidden', 'true')
+        a.style.cssText = 'position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden'
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
     } catch {
-        return null
+        /* ignore */
     }
-    if (u.protocol !== 'https:' && u.protocol !== 'http:') return null
-
-    const host = u.hostname.toLowerCase()
-    if (host !== 'zoom.us' && !host.endsWith('.zoom.us')) return null
-
-    const m = u.pathname.match(/\/(j|s|w)\/(\d{5,15})(?:\/|\?|#|$)/i)
-    if (!m) return null
-
-    const kind = m[1].toLowerCase()
-    const confno = m[2]
-    const pwd = u.searchParams.get('pwd') || ''
-    if (kind === 's') return null
-
-    const q = new URLSearchParams()
-    q.set('action', 'join')
-    q.set('confno', confno)
-    if (pwd) q.set('pwd', pwd)
-    return `zoommtg://zoom.us/join?${q.toString()}`
-}
-
-/**
- * Launch Zoom desktop/mobile via protocol handler (best inside the same user gesture).
- * Tries minimal + alternate zoommtg forms: programmatic link, window.open, iframe per URL.
- * @returns {HTMLIFrameElement[]} iframes to remove after delay
- */
-function invokeZoomNativeApp(appUrls) {
-    const urls = [...new Set((Array.isArray(appUrls) ? appUrls : [appUrls]).filter(Boolean))]
-    const iframes = []
-    for (const appUrl of urls) {
-        try {
-            const a = document.createElement('a')
-            a.setAttribute('href', appUrl)
-            a.setAttribute('aria-hidden', 'true')
-            a.style.cssText = 'position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden'
-            document.body.appendChild(a)
-            a.click()
-            document.body.removeChild(a)
-        } catch {
-            /* continue */
-        }
-
-        /** Some Chromium/Linux setups hand off zoommtg better via window.open (omit noopener so we can close an empty tab). */
-        try {
-            const w = window.open(appUrl, '_blank')
-            if (w) {
-                window.setTimeout(() => {
-                    try {
-                        if (w && !w.closed) w.close()
-                    } catch {
-                        /* ignore */
-                    }
-                }, 600)
-            }
-        } catch {
-            /* ignore */
-        }
-
-        const iframe = document.createElement('iframe')
-        iframe.style.cssText = 'display:none;width:0;height:0;border:0;position:absolute;left:-9999px'
-        iframe.setAttribute('aria-hidden', 'true')
-        document.body.appendChild(iframe)
-        iframe.src = appUrl
-        iframes.push(iframe)
-    }
-    return iframes
+    return []
 }
 
 /**
@@ -151,9 +94,7 @@ export function openZoomLinkPreferApp(httpsUrl, event) {
     }
     document.addEventListener('visibilitychange', onVisibility, { passive: true })
 
-    const alt = zoomHttpsToAppDeepLinkWithAction(httpsUrl)
-    const variants = alt && alt !== app ? [app, alt] : [app]
-    const iframeEls = invokeZoomNativeApp(variants)
+    const iframeEls = invokeZoomNativeApp(app)
 
     /** Longer wait so the local Zoom app can start before offering the web client. */
     const fallbackMs = 4500
